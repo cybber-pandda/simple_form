@@ -21,8 +21,21 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'role', // Add this
+        'status' // Add this    
     ];
 
+    // Helper methods for easy checking
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 1;
+    }
+
+    public function isCreator(): bool
+    {
+        return $this->role === 0;
+    }
+    
     /**
      * The attributes that should be hidden for serialization.
      *
