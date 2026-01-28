@@ -18,7 +18,8 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="flex h-20 justify-between"> {/* Increased height for airiness */}
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                <Link href="dashboard" className="transition-transform hover:scale-105 active:scale-95">
+                                {/* FIXED: Changed href="dashboard" to href={route('dashboard')} */}
+                                <Link href={route('dashboard')} className="transition-transform hover:scale-105 active:scale-95">
                                     <ApplicationLogo className="block h-10 w-auto" />
                                 </Link>
                             </div>
@@ -32,7 +33,6 @@ export default function AuthenticatedLayout({ header, children }) {
                                             type="button"
                                             className="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 focus:outline-none"
                                         >
-                                            {/* Optional: Add a small user avatar placeholder here */}
                                             <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px]">
                                                 {user.name.charAt(0)}
                                             </div>
@@ -74,7 +74,6 @@ export default function AuthenticatedLayout({ header, children }) {
 
                 {/* Mobile Navigation Dropdown */}
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden border-t border-slate-100 bg-white'}>
-
                     <div className="border-t border-slate-100 pb-1 pt-4 px-2">
                         <div className="px-4 mb-3">
                             <div className="text-base font-bold text-slate-800">{user.name}</div>

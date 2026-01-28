@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Form;
-use App\Models\Submission; // Ensure you have a Submission model
+use App\Models\Submission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -16,6 +16,9 @@ class FormController extends Controller
         return Inertia::render('Forms/Builder');
     }
 
+    /**
+     * Create a brand new form (Creator)
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -23,7 +26,7 @@ class FormController extends Controller
             'schema' => 'required|array', 
         ]);
 
-        Form::create([
+        $form = Form::create([
             'user_id' => Auth::id(),
             'title'   => $validated['title'],
             'slug'    => Str::slug($validated['title']) . '-' . Str::random(5),
@@ -31,38 +34,81 @@ class FormController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('dashboard')->with('message', 'Form created successfully!');
-    }
-
-    public function show($slug)
-    {
-        $form = Form::where('slug', $slug)->where('is_active', true)->firstOrFail();
-
-        return Inertia::render('Forms/PublicView', [
-            'form' => $form
+        return redirect()->back()->with('flash', [
+            'message' => 'Form published successfully!',
+            'slug'    => $form->slug,
+            'id'      => $form->id, 
         ]);
     }
 
     /**
-     * Handle the Public Submission
+     * Update the current row (Creator)
+     */
+    public function update(Request $request, Form $form)
+    {
+        if ($form->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'title'  => 'required|string|max:255',
+            'schema' => 'required|array',
+        ]);
+
+        $form->update([
+            'title'  => $validated['title'],
+            'schema' => $validated['schema'],
+        ]);
+
+        return redirect()->back()->with('flash', [
+            'message' => 'Changes saved successfully!',
+            'slug'    => $form->slug,
+            'id'      => $form->id,
+        ]);
+    }
+
+    /**
+     * Handle public form submission (Respondent)
+     * This fixes the "Call to undefined method" error.
      */
     public function submit(Request $request, $slug)
     {
         $form = Form::where('slug', $slug)->where('is_active', true)->firstOrFail();
 
-        // We save the entire request payload into a JSON column
-        // You'll need a submissions table with: form_id and data (json)
-        $form->submissions()->create([
-            'data' => $request->all(),
-            'ip_address' => $request->ip(),
+        $validated = $request->validate([
+            'data' => 'required|array',
         ]);
 
-        return back()->with('message', 'Form submitted successfully! Thank you.');
+        $form->submissions()->create([
+            'data' => $validated['data'],
+        ]);
+
+        return redirect()->back()->with('message', 'Thank you! Your response has been submitted.');
     }
 
+    /**
+     * Public view of the form
+     */
+    public function show($slug)
+    {
+        $form = Form::where('slug', $slug)->where('is_active', true)->firstOrFail();
+        return Inertia::render('Forms/PublicView', ['form' => $form]);
+    }
+
+    /**
+     * Edit existing form in builder
+     */
+    public function edit(Form $form)
+    {
+        if ($form->user_id !== Auth::id()) abort(403);
+        return Inertia::render('Forms/Builder', ['form' => $form]);
+    }
+
+    /**
+     * View responses
+     */
     public function submissions(Form $form)
     {
-        // Check ownership
         if ($form->user_id !== Auth::id()) {
             abort(403);
         }
@@ -72,19 +118,21 @@ class FormController extends Controller
             'submissions' => $form->submissions()->latest()->paginate(20)
         ]);
     }
-
     /**
-     * Load the form back into the builder for editing
+     * Remove the form and its submissions.
      */
-    public function edit(Form $form)
+    public function destroy(Form $form)
     {
-        // Ensure the user owns the form
+        // Guard against unauthorized deletion
         if ($form->user_id !== Auth::id()) {
             abort(403);
         }
 
-        return Inertia::render('Forms/Builder', [
-            'form' => $form
-        ]);
+        // Delete the form (associated submissions are deleted automatically if 
+        // using cascadeOnDelete, or manually here)
+        $form->submissions()->delete();
+        $form->delete();
+
+        return redirect()->route('dashboard')->with('message', 'Form deleted successfully.');
     }
 }

@@ -8,28 +8,18 @@ use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
-    /**
-     * The root template that is loaded on the first page visit.
-     *
-     * @var string
-     */
     protected $rootView = 'app';
 
-    /**
-     * Determine the current asset version.
-     */
     public function version(Request $request): ?string
     {
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @return array<string, mixed>
-     */
     public function share(Request $request): array
     {
+        // Get the flash data from the session
+        $flash = $request->session()->get('flash') ?? [];
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -38,6 +28,12 @@ class HandleInertiaRequests extends Middleware
             'ziggy' => fn () => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
+            ],
+            'flash' => [
+                // We check both the direct session and the nested 'flash' array
+                'message' => fn () => $request->session()->get('message') ?? ($flash['message'] ?? null),
+                'id'      => fn () => $request->session()->get('id')      ?? ($flash['id'] ?? null),
+                'slug'    => fn () => $request->session()->get('slug')    ?? ($flash['slug'] ?? null),
             ],
         ];
     }

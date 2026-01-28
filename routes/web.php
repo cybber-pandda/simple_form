@@ -38,7 +38,7 @@ Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    
+    Route::resource('forms', FormController::class);
     // --- Unified Dashboard Redirect Logic ---
     Route::get('/dashboard', function () {
         $user = Auth::user();
