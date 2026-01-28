@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Form;
 use Inertia\Inertia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,8 +20,13 @@ class AdminController extends Controller
     public function index() 
     {
         return Inertia::render('Admin/Dashboard', [
-            'totalUsers' => User::count(),
-            'totalForms' => 0 
+
+        // Global counts for the metrics cards
+        'totalUsers' => User::count(),
+        'totalForms' => Form::count(), 
+        
+        // Optional: Get the 5 most recent forms across the whole site
+        'recentForms' => Form::with('user')->latest()->take(10)->get(),
         ]);
     }
 
