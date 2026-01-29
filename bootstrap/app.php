@@ -16,8 +16,9 @@ return Application::configure(basePath: dirname(__DIR__))
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
         ]);
 
-        // --- PUT YOUR ALIAS HERE ---
         $middleware->alias([
+            // This fixes the Target class [creator.verified] does not exist error
+            'creator.verified' => \App\Http\Middleware\EnsureCreatorIsVerified::class,
             'superadmin' => \App\Http\Middleware\EnsureUserIsSuperAdmin::class,
         ]);
     })

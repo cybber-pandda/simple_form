@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\VerificationController; // Import the new controller
 use App\Models\Form;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -24,10 +25,6 @@ Route::get('/', function () {
     ]);
 });
 
-/**
- * Public Form View: Accessible to everyone with the link.
- * These handle the rendering of the form and the POST request for data.
- */
 Route::get('/f/{slug}', [FormController::class, 'show'])->name('forms.public');
 Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.submit');
 
@@ -38,23 +35,20 @@ Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.
 */
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    Route::resource('forms', FormController::class);
+    
     // --- Unified Dashboard Redirect Logic ---
     Route::get('/dashboard', function () {
         $user = Auth::user();
 
-        // If Role is 1 (Super Admin), redirect them to the Admin Metrics page
         if ($user->role === 1) {
             return redirect()->route('admin.dashboard');
         }
 
-        // Fetch forms with the count of their related submissions
         $forms = Form::where('user_id', $user->id)
             ->withCount('submissions') 
             ->latest()
             ->get();
 
-        // Render the Creator Dashboard with updated stats
         return Inertia::render('Dashboard', [
             'forms'            => $forms,
             'totalForms'       => $forms->count(),
@@ -63,13 +57,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
-    // --- Form Management ---
-    Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
-    Route::post('/forms', [FormController::class, 'store'])->name('forms.store');
-    Route::get('/forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
-    
-    // --- Submissions View ---
-    Route::get('/forms/{form}/submissions', [FormController::class, 'submissions'])->name('forms.submissions');
+    // --- New Verification Submission Route ---
+    Route::post('/verification/submit', [VerificationController::class, 'store'])->name('verification.store');
+
+    // --- Form Management (Protected by Creator Verification Middleware) ---
+    Route::middleware(['creator.verified'])->group(function () {
+        Route::resource('forms', FormController::class)->except(['index']);
+        Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
+        Route::post('/forms', [FormController::class, 'store'])->name('forms.store');
+        Route::get('/forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
+        Route::get('/forms/{form}/submissions', [FormController::class, 'submissions'])->name('forms.submissions');
+    });
     
     // --- Profile Management ---
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -89,6 +87,10 @@ Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/create', [AdminController::class, 'create'])->name('users.create');
     Route::get('/roles', [AdminController::class, 'roles'])->name('roles');
     
+    // --- New Admin Verification Review Routes ---
+    Route::get('/verifications', [VerificationController::class, 'index'])->name('verifications.index');
+    Route::patch('/verifications/{user}', [VerificationController::class, 'update'])->name('verifications.update');
+
     Route::post('/users', [AdminController::class, 'store'])->name('users.store');
     Route::patch('/users/{user}', [AdminController::class, 'update'])->name('users.update');
     Route::delete('/users/{user}', [AdminController::class, 'destroy'])->name('users.destroy');

@@ -1,6 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { Head, Link, router } from '@inertiajs/react';
+import TextInput from '@/Components/TextInput';
+import InputLabel from '@/Components/InputLabel';
+import InputError from '@/Components/InputError';
+import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import React, { useState } from 'react';
 import { 
     PlusIcon, 
@@ -11,16 +14,39 @@ import {
     CheckIcon,
     ArrowTopRightOnSquareIcon,
     TrashIcon,
-    ExclamationTriangleIcon
+    ExclamationTriangleIcon,
+    ShieldCheckIcon
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard({ totalForms, activeForms, totalSubmissions, forms = [] }) {
+    const { auth } = usePage().props;
+    const user = auth.user;
+    
+    // Verification Logic
+    const isApproved = user.verification_status === 'approved';
+    const isPendingSubmission = user.verification_status === 'pending' && !user.id_photo_path;
+    const isUnderReview = user.verification_status === 'pending' && user.id_photo_path;
+    const isRejected = user.verification_status === 'rejected';
+
     const hasForms = totalForms > 0;
     
     // Modal State
     const [selectedForm, setSelectedForm] = useState(null);
     const [formToDelete, setFormToDelete] = useState(null);
     const [copied, setCopied] = useState(false);
+
+    // Verification Form
+    const { data, setData, post, processing, errors } = useForm({
+        full_name: '',
+        organization: '',
+        id_number: '',
+        id_photo: null,
+    });
+
+    const submitVerification = (e) => {
+        e.preventDefault();
+        post(route('verification.store'));
+    };
 
     const openLinkModal = (e, form) => {
         e.stopPropagation();
@@ -35,16 +61,15 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
     };
 
     const navigateToEdit = (formId) => {
+        if (!isApproved) return;
         router.visit(route('forms.edit', formId));
     };
 
-    // Open custom delete confirmation
     const confirmDelete = (e, form) => {
         e.stopPropagation();
         setFormToDelete(form);
     };
 
-    // Execute the actual delete
     const handleDelete = () => {
         if (formToDelete) {
             router.delete(route('forms.destroy', formToDelete.id), {
@@ -56,6 +81,16 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
     return (
         <AuthenticatedLayout header="Overview">
             <Head title="Dashboard" />
+
+            {/* Verification Under Review Alert */}
+            {isUnderReview && (
+                <div className="max-w-7xl mx-auto mt-6 px-4 sm:px-6 lg:px-8">
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3 text-amber-800 shadow-sm">
+                        <ShieldCheckIcon className="h-6 w-6 text-amber-500" />
+                        <p className="font-semibold">Your verification is currently under review. Access to create forms will be enabled shortly.</p>
+                    </div>
+                </div>
+            )}
 
             <div className="py-6">
                 <div className="mx-auto max-w-7xl sm:px-6 lg:px-8 space-y-8">
@@ -78,7 +113,6 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                     </div>
 
                     {!hasForms ? (
-                        /* Empty State */
                         <div className="relative overflow-hidden bg-white shadow-2xl shadow-slate-200/50 rounded-[2.5rem] border border-slate-100">
                             <div className="absolute top-0 right-0 -mt-20 -mr-20 w-80 h-80 bg-indigo-50 rounded-full blur-3xl opacity-50" />
                             <div className="relative p-10 sm:p-16 flex flex-col items-center text-center">
@@ -87,21 +121,31 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                                 </div>
                                 <h1 className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight mb-4">Ready to build something great?</h1>
                                 <p className="max-w-xl text-lg font-medium text-slate-500 mb-10">
-                                    Welcome to FormFlow. You haven't created any forms yet. Start capturing data with our premium builder.
+                                    {isApproved ? 'Welcome to FormFlow. Start capturing data with our premium builder.' : 'Verification is required to start creating forms.'}
                                 </p>
-                                <Link href={route('forms.create')}>
-                                    <PrimaryButton>Create Your First Form</PrimaryButton>
-                                </Link>
+                                
+                                {isApproved ? (
+                                    <Link href={route('forms.create')}>
+                                        <PrimaryButton>Create Your First Form</PrimaryButton>
+                                    </Link>
+                                ) : (
+                                    <PrimaryButton disabled className="opacity-50 cursor-not-allowed">
+                                        Verification Required
+                                    </PrimaryButton>
+                                )}
                             </div>
                         </div>
                     ) : (
-                        /* Active State: Form List */
                         <div className="space-y-4">
                             <div className="flex justify-between items-center px-4">
                                 <h2 className="text-xl font-black text-slate-900">Your Recent Forms</h2>
-                                <Link href={route('forms.create')} className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
-                                    + Create New
-                                </Link>
+                                {isApproved ? (
+                                    <Link href={route('forms.create')} className="text-sm font-bold text-indigo-600 hover:text-indigo-700">
+                                        + Create New
+                                    </Link>
+                                ) : (
+                                    <span className="text-sm font-bold text-slate-400 cursor-not-allowed">Verification Required</span>
+                                )}
                             </div>
                             
                             <div className="grid grid-cols-1 gap-4">
@@ -109,7 +153,7 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                                     <div 
                                         key={form.id} 
                                         onClick={() => navigateToEdit(form.id)}
-                                        className="group bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 transition-all hover:border-indigo-300 hover:shadow-md cursor-pointer relative"
+                                        className={`group bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 transition-all relative ${isApproved ? 'hover:border-indigo-300 hover:shadow-md cursor-pointer' : 'opacity-75 cursor-default'}`}
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="h-12 w-12 rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
@@ -155,6 +199,66 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                 </div>
             </div>
 
+            {/* MANDATORY VERIFICATION MODAL */}
+            {(isPendingSubmission || isRejected) && (
+                <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] flex items-center justify-center p-4">
+                    <div className="bg-white rounded-[2.5rem] p-10 max-w-xl w-full shadow-2xl relative border border-white/20">
+                        <div className="mb-8 text-center">
+                            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-600 text-white">
+                                <ShieldCheckIcon className="h-10 w-10" />
+                            </div>
+                            <h3 className="text-3xl font-black text-slate-900">Creator Verification</h3>
+                            <p className="text-slate-500 font-medium mt-2">
+                                {isRejected 
+                                    ? "Your previous application was rejected. Please update your details." 
+                                    : "To ensure community safety, we require identity verification before you can create forms."}
+                            </p>
+                        </div>
+
+                        <form onSubmit={submitVerification} className="space-y-5">
+                            <div>
+                                <InputLabel htmlFor="full_name" value="Full Legal Name" />
+                                <TextInput
+                                    id="full_name"
+                                    className="mt-1 block w-full"
+                                    value={data.full_name}
+                                    onChange={(e) => setData('full_name', e.target.value)}
+                                    required
+                                />
+                                <InputError message={errors.full_name} className="mt-2" />
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="organization" value="Organization Name" />
+                                <TextInput
+                                    id="organization"
+                                    className="mt-1 block w-full"
+                                    value={data.organization}
+                                    onChange={(e) => setData('organization', e.target.value)}
+                                    required
+                                />
+                                <InputError message={errors.organization} className="mt-2" />
+                            </div>
+
+                            <div>
+                                <InputLabel htmlFor="id_photo" value="Upload ID Photo (Passport/Driver's License)" />
+                                <input
+                                    type="file"
+                                    className="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                                    onChange={(e) => setData('id_photo', e.target.files[0])}
+                                    required
+                                />
+                                <InputError message={errors.id_photo} className="mt-2" />
+                            </div>
+
+                            <PrimaryButton className="w-full justify-center py-4 text-lg" disabled={processing}>
+                                {processing ? 'Submitting...' : 'Submit for Review'}
+                            </PrimaryButton>
+                        </form>
+                    </div>
+                </div>
+            )}
+            
             {/* Share Link Modal */}
             {selectedForm && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
