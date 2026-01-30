@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { motion } from 'framer-motion';
 import { Zap, ArrowRight, Lock, Mail } from 'lucide-react';
+import TextInput from '@/Components/TextInput'; // Importing your updated component
 
 export default function Login({ status, canResetPassword }) {
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -20,7 +21,6 @@ export default function Login({ status, canResetPassword }) {
     };
 
     return (
-        // Full screen wrapper - replaces GuestLayout
         <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center p-6 font-sans selection:bg-indigo-100">
             <Head title="Log in" />
 
@@ -53,16 +53,16 @@ export default function Login({ status, canResetPassword }) {
                 )}
 
                 <form onSubmit={submit} className="space-y-6">
-                    {/* EMAIL INPUT (Custom Styled) */}
+                    {/* EMAIL INPUT */}
                     <div className="space-y-2">
                         <label className="text-xs font-bold text-slate-400 uppercase tracking-widest ml-1">Work Email</label>
                         <div className="relative group">
-                            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-                            <input
+                            <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10" size={18} />
+                            <TextInput
                                 type="email"
                                 value={data.email}
                                 onChange={(e) => setData('email', e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-600 transition-all outline-none text-slate-700"
+                                className="pl-14" // Extra padding for the Mail icon
                                 placeholder="name@company.com"
                                 required
                             />
@@ -70,7 +70,7 @@ export default function Login({ status, canResetPassword }) {
                         {errors.email && <p className="text-red-500 text-xs mt-1 ml-1">{errors.email}</p>}
                     </div>
 
-                    {/* PASSWORD INPUT (Custom Styled) */}
+                    {/* PASSWORD INPUT */}
                     <div className="space-y-2">
                         <div className="flex justify-between items-center px-1">
                             <label className="text-xs font-bold text-slate-400 uppercase tracking-widest">Password</label>
@@ -81,12 +81,12 @@ export default function Login({ status, canResetPassword }) {
                             )}
                         </div>
                         <div className="relative group">
-                            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors" size={18} />
-                            <input
+                            <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-600 transition-colors z-10" size={18} />
+                            <TextInput
                                 type="password"
                                 value={data.password}
                                 onChange={(e) => setData('password', e.target.value)}
-                                className="w-full pl-12 pr-4 py-4 bg-slate-50 border-none ring-1 ring-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-600 transition-all outline-none text-slate-700"
+                                className="pl-14" // Extra padding for the Lock icon
                                 placeholder="••••••••"
                                 required
                             />

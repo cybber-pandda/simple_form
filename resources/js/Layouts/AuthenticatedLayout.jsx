@@ -13,12 +13,11 @@ export default function AuthenticatedLayout({ header, children }) {
         // 1. Background: Using a cooler slate-50 instead of standard gray-100
         <div className="min-h-screen bg-slate-50/50">
             {/* 2. Navigation: Sticky with glass effect (backdrop-blur) */}
-            <nav className="sticky top-0 z-40 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
+            <nav className="sticky top-0 z-50 border-b border-slate-200/60 bg-white/80 backdrop-blur-xl">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div className="flex h-20 justify-between"> {/* Increased height for airiness */}
+                    <div className="flex h-20 justify-between"> 
                         <div className="flex">
                             <div className="flex shrink-0 items-center">
-                                {/* FIXED: Changed href="dashboard" to href={route('dashboard')} */}
                                 <Link href={route('dashboard')} className="transition-transform hover:scale-105 active:scale-95">
                                     <ApplicationLogo className="block h-10 w-auto" />
                                 </Link>
@@ -72,19 +71,32 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </div>
 
-                {/* Mobile Navigation Dropdown */}
-                <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden border-t border-slate-100 bg-white'}>
-                    <div className="border-t border-slate-100 pb-1 pt-4 px-2">
-                        <div className="px-4 mb-3">
-                            <div className="text-base font-bold text-slate-800">{user.name}</div>
-                            <div className="text-sm font-medium text-slate-500">{user.email}</div>
+                {/* --- FIXED FLOATING MOBILE DROPDOWN --- */}
+                {showingNavigationDropdown && (
+                    <>
+                        {/* 1. Backdrop overlay to focus on the menu */}
+                        <div 
+                            className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-[-1]" 
+                            onClick={() => setShowingNavigationDropdown(false)}
+                        />
+                        
+                        {/* 2. Floating Content Container */}
+                        <div className="sm:hidden absolute top-full left-0 w-full bg-white border-b border-slate-200 shadow-2xl animate-in fade-in slide-in-from-top-2 duration-200 overflow-hidden">
+                            <div className="pb-1 pt-4 px-2">
+                                <div className="px-4 mb-3">
+                                    <div className="text-base font-bold text-slate-800">{user.name}</div>
+                                    <div className="text-sm font-medium text-slate-500">{user.email}</div>
+                                </div>
+                                <div className="space-y-1 pb-3">
+                                    <ResponsiveNavLink href={route('profile.edit')}>Profile Settings</ResponsiveNavLink>
+                                    <ResponsiveNavLink method="post" href={route('logout')} as="button" className="w-full text-left">
+                                        Sign Out
+                                    </ResponsiveNavLink>
+                                </div>
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <ResponsiveNavLink href={route('profile.edit')}>Profile Settings</ResponsiveNavLink>
-                            <ResponsiveNavLink method="post" href={route('logout')} as="button">Sign Out</ResponsiveNavLink>
-                        </div>
-                    </div>
-                </div>
+                    </>
+                )}
             </nav>
 
             {/* 3. Header Section: Clean, bold typography */}

@@ -8,12 +8,13 @@ import {
     MagnifyingGlassIcon,
     XMarkIcon,
     PowerIcon,
-    UserCircleIcon // New Icon for Viewing
+    UserCircleIcon,
+    ArrowsRightLeftIcon // New icon for the swipe hint
 } from '@heroicons/react/24/outline';
 
 export default function Index({ users }) {
     const [editingUser, setEditingUser] = useState(null);
-    const [viewingUser, setViewingUser] = useState(null); // State for the View Modal
+    const [viewingUser, setViewingUser] = useState(null); 
     
     // 1. Setup the Edit Form
     const { data, setData, patch, processing, errors, reset } = useForm({
@@ -114,95 +115,119 @@ export default function Index({ users }) {
     return (
         <AdminLayout header="Manage Users" title="User Directory">
             
-            {/* --- USER TABLE --- */}
-            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden">
-                <div className="p-8 border-b border-slate-50 flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-slate-800">User Directory</h3>
-                    <div className="relative">
-                        <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-2.5 text-slate-400" />
-                        <input 
-                            type="text" 
-                            placeholder="Search users..." 
-                            className="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 w-64" 
-                        />
+            {/* --- USER TABLE CONTAINER --- */}
+            <div className="bg-white rounded-[1.5rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm overflow-hidden relative">
+                
+                {/* 1. Table Header & Mobile Swipe Hint */}
+                <div className="p-5 md:p-8 border-b border-slate-50">
+                    <div className="flex flex-col md:flex-row gap-4 justify-between items-center mb-4 md:mb-0">
+                        <div className="flex items-center gap-3 w-full md:w-auto">
+                            <h3 className="text-lg md:text-xl font-bold text-slate-800">User Directory</h3>
+                            
+                            {/* --- MOBILE SWIPE HINT --- */}
+                            <div className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full animate-pulse">
+                                <ArrowsRightLeftIcon className="w-3.5 h-3.5" />
+                                <span className="text-[10px] font-black uppercase tracking-tight">Swipe</span>
+                            </div>
+                        </div>
+
+                        <div className="relative w-full md:w-auto">
+                            <MagnifyingGlassIcon className="w-5 h-5 absolute left-3 top-2.5 text-slate-400" />
+                            <input 
+                                type="text" 
+                                placeholder="Search users..." 
+                                className="pl-10 pr-4 py-2 bg-slate-50 border-none rounded-xl text-sm focus:ring-2 focus:ring-indigo-500 w-full md:w-64" 
+                            />
+                        </div>
                     </div>
                 </div>
 
-                <table className="w-full text-left">
-                    <thead className="bg-slate-50/50 text-slate-400 text-xs uppercase font-bold tracking-widest">
-                        <tr>
-                            <th className="px-8 py-4">User Details</th>
-                            <th className="px-8 py-4">Role</th>
-                            <th className="px-8 py-4">Status</th>
-                            <th className="px-8 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-50">
-                        {users.map((user) => (
-                            <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
-                                <td className="px-8 py-5">
-                                    <div className="font-bold text-slate-700">{user.name}</div>
-                                    <div className="text-xs text-slate-400 font-medium">{user.email}</div>
-                                </td>
-                                <td className="px-8 py-5">
-                                    <span className={`px-3 py-1 text-[10px] font-black uppercase rounded-full tracking-wider ${
-                                        user.role === 1 ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'
-                                    }`}>
-                                        {user.role === 1 ? 'Super Admin' : 'Creator'}
-                                    </span>
-                                </td>
-                                <td className="px-8 py-5">
-                                    <div className="flex items-center gap-2">
-                                        <span className={`w-2 h-2 rounded-full ${user.status === 1 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
-                                        <span className={`text-xs font-bold ${user.status === 1 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                            {user.status === 1 ? 'Active' : 'Inactive'}
-                                        </span>
-                                    </div>
-                                </td>
-                                <td className="px-8 py-5 text-right space-x-1">
-                                    {/* --- VIEW ACTION --- */}
-                                    <button 
-                                        onClick={() => setViewingUser(user)}
-                                        className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
-                                        title="View Profile"
-                                    >
-                                        <UserCircleIcon className="w-5 h-5" />
-                                    </button>
+                {/* 2. Scrollable Wrapper with Dynamic Shadow */}
+                <div className="relative group/table">
+                    {/* Visual cue: Right side gradient to show more content exists */}
+                    <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-white/80 to-transparent pointer-events-none z-10 md:hidden" />
 
-                                    <button 
-                                        onClick={() => handleToggleStatus(user)}
-                                        className={`p-2 rounded-xl transition-all ${
-                                            user.status === 1 
-                                            ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50' 
-                                            : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
-                                        }`}
-                                        title={user.status === 1 ? 'Deactivate' : 'Activate'}
-                                    >
-                                        <PowerIcon className="w-5 h-5" />
-                                    </button>
-                                    <button 
-                                        onClick={() => openEditModal(user)}
-                                        className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
-                                    >
-                                        <PencilSquareIcon className="w-5 h-5" />
-                                    </button>
-                                    <button 
-                                        onClick={() => handleDelete(user)}
-                                        className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
-                                    >
-                                        <TrashIcon className="w-5 h-5" />
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
+                    <div className="overflow-x-auto scrollbar-hide">
+                        <table className="w-full text-left min-w-[700px]">
+                            <thead className="bg-slate-50/50 text-slate-400 text-[10px] md:text-xs uppercase font-bold tracking-widest">
+                                <tr>
+                                    <th className="px-5 md:px-8 py-4">User Details</th>
+                                    <th className="px-5 md:px-8 py-4">Role</th>
+                                    <th className="px-5 md:px-8 py-4">Status</th>
+                                    <th className="px-5 md:px-8 py-4 text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-50">
+                                {users.map((user) => (
+                                    <tr key={user.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-5 md:px-8 py-5">
+                                            <div className="font-bold text-slate-700 text-sm md:text-base">{user.name}</div>
+                                            <div className="text-[10px] md:text-xs text-slate-400 font-medium truncate max-w-[150px] md:max-w-none">
+                                                {user.email}
+                                            </div>
+                                        </td>
+                                        <td className="px-5 md:px-8 py-5">
+                                            <span className={`px-3 py-1 text-[9px] md:text-[10px] font-black uppercase rounded-full tracking-wider whitespace-nowrap ${
+                                                user.role === 1 ? 'bg-indigo-50 text-indigo-600' : 'bg-slate-100 text-slate-600'
+                                            }`}>
+                                                {user.role === 1 ? 'Super Admin' : 'Creator'}
+                                            </span>
+                                        </td>
+                                        <td className="px-5 md:px-8 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <span className={`w-2 h-2 rounded-full flex-shrink-0 ${user.status === 1 ? 'bg-emerald-500' : 'bg-rose-500'}`}></span>
+                                                <span className={`text-[10px] md:text-xs font-bold ${user.status === 1 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                                    {user.status === 1 ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 md:px-8 py-5 text-right whitespace-nowrap">
+                                            <div className="flex justify-end gap-1">
+                                                <button 
+                                                    onClick={() => setViewingUser(user)}
+                                                    className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
+                                                    title="View Profile"
+                                                >
+                                                    <UserCircleIcon className="w-5 h-5" />
+                                                </button>
+
+                                                <button 
+                                                    onClick={() => handleToggleStatus(user)}
+                                                    className={`p-2 rounded-xl transition-all ${
+                                                        user.status === 1 
+                                                        ? 'text-slate-400 hover:text-amber-600 hover:bg-amber-50' 
+                                                        : 'text-slate-400 hover:text-emerald-600 hover:bg-emerald-50'
+                                                    }`}
+                                                    title={user.status === 1 ? 'Deactivate' : 'Activate'}
+                                                >
+                                                    <PowerIcon className="w-5 h-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => openEditModal(user)}
+                                                    className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all"
+                                                >
+                                                    <PencilSquareIcon className="w-5 h-5" />
+                                                </button>
+                                                <button 
+                                                    onClick={() => handleDelete(user)}
+                                                    className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                                >
+                                                    <TrashIcon className="w-5 h-5" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
             {/* --- VIEW MODAL --- */}
             {viewingUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 relative animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 md:p-10 relative animate-in zoom-in-95 duration-200">
                         <button onClick={() => setViewingUser(null)} className="absolute top-6 right-6 p-2 text-slate-400 hover:bg-slate-50 rounded-full">
                             <XMarkIcon className="w-6 h-6" />
                         </button>
@@ -211,8 +236,8 @@ export default function Index({ users }) {
                             <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 text-3xl font-black mb-4">
                                 {viewingUser.name.charAt(0)}
                             </div>
-                            <h3 className="text-2xl font-black text-slate-800">{viewingUser.name}</h3>
-                            <span className="text-slate-400 font-medium">{viewingUser.email}</span>
+                            <h3 className="text-2xl font-black text-slate-800 text-center">{viewingUser.name}</h3>
+                            <span className="text-slate-400 font-medium text-center truncate w-full px-4">{viewingUser.email}</span>
                         </div>
 
                         <div className="space-y-4">
@@ -235,8 +260,8 @@ export default function Index({ users }) {
 
             {/* --- EDIT MODAL --- */}
             {editingUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
-                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-10 relative animate-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 md:p-10 relative animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
                         <button 
                             onClick={closeEditModal}
                             className="absolute top-6 right-6 p-2 text-slate-400 hover:bg-slate-50 rounded-full"

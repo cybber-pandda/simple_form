@@ -3,7 +3,7 @@ import { Head, useForm, usePage, router } from '@inertiajs/react';
 import React, { useState, useEffect } from 'react';
 import { 
     PlusIcon, TrashIcon, XMarkIcon, PaperAirplaneIcon, 
-    CheckIcon, ClipboardIcon, CloudArrowUpIcon
+    CheckIcon, ClipboardIcon, CloudArrowUpIcon, DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
 
 export default function Builder({ form = null }) {
@@ -17,15 +17,14 @@ export default function Builder({ form = null }) {
 
     const [generatedUrl, setGeneratedUrl] = useState(null);
     const [copied, setCopied] = useState(false);
+    const [titleError, setTitleError] = useState(false);
 
-    // Watch for flash data to update local form state with the new ID and show the modal
     useEffect(() => {
         if (props.flash?.id) {
             setData('id', props.flash.id);
         }
         
         if (props.flash?.slug) {
-            // Updated to match your forms.public route structure
             const url = `${window.location.origin}/f/${props.flash.slug}`;
             setGeneratedUrl(url);
         }
@@ -41,6 +40,20 @@ export default function Builder({ form = null }) {
             required: false,
         };
         setData('schema', [...data.schema, newField]);
+    };
+
+    const duplicateField = (field) => {
+        const newField = {
+            ...field,
+            id: Date.now() + Math.random(), // Ensure unique ID even if clicked rapidly
+        };
+        
+        // Find the index of the original field to insert the duplicate right after it
+        const index = data.schema.findIndex(f => f.id === field.id);
+        const newSchema = [...data.schema];
+        newSchema.splice(index + 1, 0, newField);
+        
+        setData('schema', newSchema);
     };
 
     const updateField = (id, key, value) => {
@@ -60,15 +73,21 @@ export default function Builder({ form = null }) {
 
     const submit = (e) => {
         e.preventDefault();
+
+        if (!data.title.trim()) {
+            setTitleError(true);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+
+        setTitleError(false);
         
         if (data.id) {
-            // Update existing row
             put(route('forms.update', data.id), {
                 preserveScroll: true,
                 onBefore: () => setGeneratedUrl(null),
             });
         } else {
-            // Create new row
             post(route('forms.store'), {
                 preserveScroll: true,
                 onBefore: () => setGeneratedUrl(null),
@@ -89,13 +108,23 @@ export default function Builder({ form = null }) {
             <form onSubmit={submit} className="py-12 max-w-4xl mx-auto space-y-6 pb-24 px-4">
                 
                 {/* Form Title Card */}
-                <div className="bg-white p-6 rounded-xl border-t-[10px] border-indigo-700 shadow-sm">
+                <div className={`bg-white p-6 rounded-xl border-t-[10px] shadow-sm transition-colors ${
+                    titleError ? 'border-red-500' : 'border-indigo-700'
+                }`}>
                     <input 
                         className="w-full text-3xl font-bold border-none border-b-2 border-transparent focus:border-slate-100 focus:ring-0 p-0 placeholder-slate-300"
                         placeholder="Untitled Form"
                         value={data.title}
-                        onChange={e => setData('title', e.target.value)}
+                        onChange={e => {
+                            setData('title', e.target.value);
+                            if (e.target.value.trim()) setTitleError(false);
+                        }}
                     />
+                    {titleError && (
+                        <p className="mt-2 text-sm text-red-600 font-semibold animate-pulse">
+                            Please provide a form title before publishing.
+                        </p>
+                    )}
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-4">
@@ -162,11 +191,23 @@ export default function Builder({ form = null }) {
                                     </div>
                                 </div>
                                 
-                                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-end gap-6">
+                                <div className="mt-8 pt-4 border-t border-slate-100 flex items-center justify-end gap-4">
+                                    {/* Duplicate Button */}
+                                    <button 
+                                        type="button"
+                                        onClick={() => duplicateField(field)} 
+                                        className="text-slate-500 hover:text-indigo-600 transition-colors p-1"
+                                        title="Duplicate"
+                                    >
+                                        <DocumentDuplicateIcon className="w-5 h-5" />
+                                    </button>
+
+                                    {/* Delete Button */}
                                     <button 
                                         type="button"
                                         onClick={() => setData('schema', data.schema.filter(f => f.id !== field.id))} 
-                                        className="text-slate-500 hover:text-red-600 transition-colors"
+                                        className="text-slate-500 hover:text-red-600 transition-colors p-1"
+                                        title="Delete"
                                     >
                                         <TrashIcon className="w-5 h-5" />
                                     </button>
@@ -257,7 +298,6 @@ export default function Builder({ form = null }) {
                             </button>
                         </div>
 
-                        {/* Updated Primary Action Button */}
                         <button 
                             onClick={() => router.visit(route('dashboard'))}
                             className="w-full py-4 bg-indigo-600 text-white rounded-2xl font-black hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"

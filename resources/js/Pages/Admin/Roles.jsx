@@ -23,30 +23,33 @@ export default function Roles() {
 
     return (
         <AdminLayout header="Roles & Permissions" title="Roles">
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 md:gap-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {roles.map((role) => (
-                    <div key={role.name} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className={`p-4 ${role.bgColor} rounded-2xl`}>
-                                <ShieldCheckIcon className={`w-8 h-8 ${role.color}`} />
+                    <div key={role.name} className="bg-white p-6 md:p-8 rounded-[2rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col transition-all hover:shadow-md">
+                        <div className="flex justify-between items-start mb-5 md:mb-6">
+                            <div className={`p-3 md:p-4 ${role.bgColor} rounded-xl md:rounded-2xl`}>
+                                <ShieldCheckIcon className={`w-6 h-6 md:w-8 md:h-8 ${role.color}`} />
                             </div>
-                            <span className="px-4 py-1.5 bg-slate-50 text-slate-400 text-xs font-black uppercase tracking-widest rounded-full">
+                            <span className="px-3 py-1 bg-slate-50 text-slate-400 text-[10px] md:text-xs font-black uppercase tracking-widest rounded-full border border-slate-100/50">
                                 {role.level}
                             </span>
                         </div>
 
-                        <h3 className="text-2xl font-black text-slate-800 mb-3">{role.name}</h3>
-                        <p className="text-slate-500 font-medium leading-relaxed mb-8">
+                        {/* Smaller font on mobile (text-xl), larger on desktop (text-2xl) */}
+                        <h3 className="text-xl md:text-2xl font-black text-slate-800 mb-2 md:mb-3">{role.name}</h3>
+                        
+                        {/* Adjusted line height and text size for mobile readability */}
+                        <p className="text-sm md:text-base text-slate-500 font-medium leading-relaxed mb-6 md:mb-8">
                             {role.description}
                         </p>
 
-                        <div className="mt-auto pt-6 border-t border-slate-50">
-                            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <KeyIcon className="w-4 h-4" /> Capabilities
+                        <div className="mt-auto pt-5 md:pt-6 border-t border-slate-50">
+                            <p className="text-[10px] md:text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 md:mb-4 flex items-center gap-2">
+                                <KeyIcon className="w-3 h-3 md:w-4 md:h-4" /> Capabilities
                             </p>
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-1.5 md:gap-2">
                                 {role.permissions.map((perm) => (
-                                    <span key={perm} className="px-3 py-1 bg-slate-50 text-slate-600 text-xs font-bold rounded-lg border border-slate-100">
+                                    <span key={perm} className="px-2.5 py-1 bg-slate-50 text-slate-600 text-[10px] md:text-xs font-bold rounded-lg border border-slate-100">
                                         {perm}
                                     </span>
                                 ))}
@@ -56,15 +59,16 @@ export default function Roles() {
                 ))}
             </div>
 
-            {/* Security Tip Box */}
-            <div className="mt-8 p-8 bg-slate-900 rounded-[2.5rem] text-white flex items-center justify-between overflow-hidden relative">
+            {/* Security Tip Box - Scaled for Mobile */}
+            <div className="mt-6 md:mt-8 p-6 md:p-8 bg-slate-900 rounded-[2rem] md:rounded-[2.5rem] text-white flex items-center justify-between overflow-hidden relative">
                 <div className="relative z-10">
-                    <h4 className="text-lg font-bold mb-1 font-bold">Security Enforcement</h4>
-                    <p className="text-slate-400 text-sm max-w-md font-medium">
+                    <h4 className="text-base md:text-lg font-bold mb-1 tracking-tight">Security Enforcement</h4>
+                    <p className="text-slate-400 text-xs md:text-sm max-w-md font-medium leading-relaxed">
                         Roles are enforced via server-side middleware. Even if UI elements are hidden, unauthorized API requests will be blocked with a 403 error.
                     </p>
                 </div>
-                <UserGroupIcon className="w-32 h-32 text-white/5 absolute -right-4 -bottom-4" />
+                {/* Icon hidden on very small screens to keep text readable, appears on md up */}
+                <UserGroupIcon className="hidden md:block w-32 h-32 text-white/5 absolute -right-4 -bottom-4" />
             </div>
         </AdminLayout>
     );
