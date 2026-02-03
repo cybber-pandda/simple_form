@@ -10,7 +10,6 @@ import React, { useEffect, useState } from 'react';
 // Enhanced Tooltip Component
 const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
-        // For Pie charts, the label is often in payload[0].name
         const displayName = label || payload[0].name;
         return (
             <div className="bg-slate-900/95 backdrop-blur-md border border-slate-700 p-3 rounded-2xl shadow-2xl z-50">
@@ -25,6 +24,20 @@ const CustomTooltip = ({ active, payload, label }) => {
     }
     return null;
 };
+
+// Reusable Empty State Component to keep code clean
+const EmptyState = ({ message, icon: Icon }) => (
+    <div className="flex flex-col items-center justify-center h-full space-y-3 animate-in fade-in duration-700">
+        <div className="p-4 bg-slate-50 rounded-[1.5rem] border border-slate-100">
+            {Icon ? <Icon className="w-8 h-8 text-slate-300" /> : (
+                <div className="w-8 h-8 rounded-full border-4 border-dashed border-slate-200" />
+            )}
+        </div>
+        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] text-center leading-relaxed">
+            {message}
+        </p>
+    </div>
+);
 
 export default function Index({ totalForms, totalSubmissions, topForms, trendData, currentFilter }) {
     const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
@@ -57,7 +70,6 @@ export default function Index({ totalForms, totalSubmissions, topForms, trendDat
 
     const COLORS = ['#6366f1', '#8b5cf6', '#ec4899'];
 
-    // Desktop: Full title | Mobile: Shortened
     const barData = topForms.map(form => ({
         name: isMobile 
             ? (form.title.length > 12 ? form.title.substring(0, 12) + '..' : form.title)
@@ -76,6 +88,9 @@ export default function Index({ totalForms, totalSubmissions, topForms, trendDat
         { label: '30D', value: 'month' },
         { label: 'Year', value: 'year' },
     ];
+
+    // Helper to check if trend data is essentially empty (all counts are 0)
+    const hasTrendActivity = formattedTrend.some(item => item.count > 0);
 
     return (
         <AuthenticatedLayout header="Detailed Analytics">
@@ -115,7 +130,7 @@ export default function Index({ totalForms, totalSubmissions, topForms, trendDat
                         </div>
                         
                         <div className="h-64 sm:h-80 w-full">
-                            {formattedTrend.length > 0 ? (
+                            {hasTrendActivity ? (
                                 <ResponsiveContainer width="100%" height="100%">
                                     <AreaChart data={formattedTrend}>
                                         <defs>
@@ -139,7 +154,7 @@ export default function Index({ totalForms, totalSubmissions, topForms, trendDat
                                     </AreaChart>
                                 </ResponsiveContainer>
                             ) : (
-                                <div className="flex flex-col items-center justify-center h-full opacity-20"><ChartBarIcon className="w-12 h-12" /></div>
+                                <EmptyState message="No activity recorded in this period" icon={ChartBarIcon} />
                             )}
                         </div>
                     </div>
@@ -151,59 +166,66 @@ export default function Index({ totalForms, totalSubmissions, topForms, trendDat
                         <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                             <h3 className="text-[10px] font-black text-slate-400 mb-8 uppercase tracking-[0.2em]">Rank Analysis</h3>
                             <div className="h-64 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <BarChart data={barData} layout="vertical" margin={{ left: 10, right: 30 }}>
-                                        <XAxis type="number" hide />
-                                        <YAxis 
-                                            dataKey="name" 
-                                            type="category" 
-                                            axisLine={false} 
-                                            tickLine={false} 
-                                            fontSize={isMobile ? 10 : 12} 
-                                            width={isMobile ? 80 : 140}
-                                            tick={{fill: '#475569', fontWeight: 800}}
-                                        />
-                                        <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} />
-                                        <Bar dataKey="submissions" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24} />
-                                    </BarChart>
-                                </ResponsiveContainer>
+                                {barData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={barData} layout="vertical" margin={{ left: 10, right: 30 }}>
+                                            <XAxis type="number" hide />
+                                            <YAxis 
+                                                dataKey="name" 
+                                                type="category" 
+                                                axisLine={false} 
+                                                tickLine={false} 
+                                                fontSize={isMobile ? 10 : 12} 
+                                                width={isMobile ? 80 : 140}
+                                                tick={{fill: '#475569', fontWeight: 800}}
+                                            />
+                                            <Tooltip content={<CustomTooltip />} cursor={{fill: '#f8fafc'}} />
+                                            <Bar dataKey="submissions" fill="#6366f1" radius={[0, 10, 10, 0]} barSize={24} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyState message="No forms have received submissions yet" icon={ChartBarIcon} />
+                                )}
                             </div>
                         </div>
 
-                        {/* Volume Distribution (FIXED TOOLTIP) */}
+                        {/* Volume Distribution */}
                         <div className="bg-white p-6 sm:p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
                             <h3 className="text-[10px] font-black text-slate-400 mb-8 uppercase tracking-[0.2em]">Volume Distribution</h3>
                             <div className="h-64 w-full">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <PieChart>
-                                        {/* Tooltip added here to fix the issue */}
-                                        <Tooltip content={<CustomTooltip />} />
-                                        <Pie 
-                                            data={barData} 
-                                            dataKey="submissions" 
-                                            nameKey="name"
-                                            cx="50%" 
-                                            cy="45%" 
-                                            innerRadius={isMobile ? 55 : 65} 
-                                            outerRadius={isMobile ? 75 : 90} 
-                                            paddingAngle={8}
-                                            stroke="none"
-                                        >
-                                            {barData.map((_, index) => (
-                                                <Cell key={index} fill={COLORS[index % COLORS.length]} />
-                                            ))}
-                                        </Pie>
-                                        <Legend 
-                                            verticalAlign="bottom" 
-                                            iconType="circle" 
-                                            formatter={(value) => (
-                                                <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest ml-1">
-                                                    {value}
-                                                </span>
-                                            )}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
+                                {barData.length > 0 ? (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <PieChart>
+                                            <Tooltip content={<CustomTooltip />} />
+                                            <Pie 
+                                                data={barData} 
+                                                dataKey="submissions" 
+                                                nameKey="name"
+                                                cx="50%" 
+                                                cy="45%" 
+                                                innerRadius={isMobile ? 55 : 65} 
+                                                outerRadius={isMobile ? 75 : 90} 
+                                                paddingAngle={8}
+                                                stroke="none"
+                                            >
+                                                {barData.map((_, index) => (
+                                                    <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                                ))}
+                                            </Pie>
+                                            <Legend 
+                                                verticalAlign="bottom" 
+                                                iconType="circle" 
+                                                formatter={(value) => (
+                                                    <span className="text-slate-500 font-black uppercase text-[9px] tracking-widest ml-1">
+                                                        {value}
+                                                    </span>
+                                                )}
+                                            />
+                                        </PieChart>
+                                    </ResponsiveContainer>
+                                ) : (
+                                    <EmptyState message="Distribution data unavailable" />
+                                )}
                             </div>
                         </div>
                     </div>

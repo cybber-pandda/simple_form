@@ -7,13 +7,14 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use App\Notifications\AccountStatusUpdated;
 
 class VerificationController extends Controller
 {
     /**
      * Display the pending verifications list.
      * Rendering path updated to match your file structure.
-     */ 
+     */
     public function index()
     {
         // Only allow admins to view this list
@@ -72,11 +73,12 @@ class VerificationController extends Controller
             'status' => 'required|in:approved,rejected',
         ]);
 
-        // If rejected, you could optionally delete the photo, 
-        // but keeping it helps the admin remember why they rejected it.
         $user->update([
             'verification_status' => $request->status,
         ]);
+
+        // Trigger the Notification to the user being reviewed
+        $user->notify(new AccountStatusUpdated($request->status));
 
         return redirect()->route('admin.verifications.index')
             ->with('message', "User has been " . ucfirst($request->status) . ".");

@@ -11,29 +11,30 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail; // Added for email
 use App\Mail\WelcomeNewUser;        // Added mailable import
+use App\Notifications\AccountStatusUpdated;
 
 class AdminController extends Controller
 {
     /**
      * Display the Admin Dashboard with stats.
      */
-    public function index() 
+    public function index()
     {
         return Inertia::render('Admin/Dashboard', [
 
-        // Global counts for the metrics cards
-        'totalUsers' => User::count(),
-        'totalForms' => Form::count(), 
-        
-        // Optional: Get the 5 most recent forms across the whole site
-        'recentForms' => Form::with('user')->latest()->take(10)->get(),
+            // Global counts for the metrics cards
+            'totalUsers' => User::count(),
+            'totalForms' => Form::count(),
+
+            // Optional: Get the 5 most recent forms across the whole site
+            'recentForms' => Form::with('user')->latest()->take(10)->get(),
         ]);
     }
 
     /**
      * Display the User Directory with search.
      */
-    public function users(Request $request) 
+    public function users(Request $request)
     {
         $query = User::query();
 
@@ -51,7 +52,7 @@ class AdminController extends Controller
     /**
      * Show the form for creating a new user.
      */
-    public function create() 
+    public function create()
     {
         return Inertia::render('Admin/Users/Create');
     }
@@ -74,7 +75,7 @@ class AdminController extends Controller
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'role'     => $validated['role'],
-            'status'   => 1, 
+            'status'   => 1,
             'password' => Hash::make($password),
         ]);
 
@@ -120,7 +121,7 @@ class AdminController extends Controller
         }
 
         $user->delete();
-        
+
         return back()->with('message', 'User deleted successfully.');
     }
 
@@ -133,13 +134,21 @@ class AdminController extends Controller
             return back()->with('error', 'You cannot deactivate yourself.');
         }
 
+        // Toggle the status
         $user->status = $user->status === 1 ? 0 : 1;
         $user->save();
 
-        return back()->with('message', 'User status updated.');
+        // NEW FEATURE: Trigger Notification
+        // If status is 1, account was just activated; if 0, it was deactivated.
+        $statusType = $user->status === 1 ? 'activated' : 'deactivated';
+
+        // Notify the user of the change
+        $user->notify(new AccountStatusUpdated($statusType));
+
+        return back()->with('message', 'User status updated to ' . $statusType . '.');
     }
 
-    public function roles() 
+    public function roles()
     {
         return Inertia::render('Admin/Roles');
     }

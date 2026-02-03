@@ -8,6 +8,7 @@ use App\Models\Form;
 use App\Models\Submission;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
@@ -54,12 +55,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ]);
     })->name('dashboard');
 
-Route::get('/metrics', function (Request $request) {
+    Route::get('/metrics', function (Request $request) {
         $user = Auth::user();
         $range = $request->input('range', 'week'); // Default to week
 
         // Determine the start date based on filter
-        $startDate = match($range) {
+        $startDate = match ($range) {
             'day'   => Carbon::today(),
             'month' => Carbon::now()->subMonth(),
             'year'  => Carbon::now()->subYear(),
@@ -88,10 +89,16 @@ Route::get('/metrics', function (Request $request) {
             'trendData'        => $trendData,
             'currentFilter'    => $range, // Send back to React to keep button active
         ]);
-})->name('metrics.index');
+    })->name('metrics.index');
 
-// --- New Verification Submission Route ---
-Route::post('/verification/submit', [VerificationController::class, 'store'])->name('verification.store');
+    // --- Notification Routes ---
+    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/mark-read-selected', [NotificationController::class, 'markRead'])->name('notifications.markRead');
+    Route::delete('/notifications/delete-selected', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+
+    // --- New Verification Submission Route ---
+    Route::post('/verification/submit', [VerificationController::class, 'store'])->name('verification.store');
 
     // --- Form Management (Protected by Creator Verification Middleware) ---
     Route::middleware(['creator.verified'])->group(function () {

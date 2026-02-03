@@ -24,16 +24,19 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                // ADD THIS LINE:
+                'unread_notifications_count' => $request->user()
+                    ? $request->user()->unreadNotifications()->count()
+                    : 0,
             ],
-            'ziggy' => fn () => [
+            'ziggy' => fn() => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
             'flash' => [
-                // We check both the direct session and the nested 'flash' array
-                'message' => fn () => $request->session()->get('message') ?? ($flash['message'] ?? null),
-                'id'      => fn () => $request->session()->get('id')      ?? ($flash['id'] ?? null),
-                'slug'    => fn () => $request->session()->get('slug')    ?? ($flash['slug'] ?? null),
+                'message' => fn() => $request->session()->get('message') ?? ($flash['message'] ?? null),
+                'id'      => fn() => $request->session()->get('id')      ?? ($flash['id'] ?? null),
+                'slug'    => fn() => $request->session()->get('slug')    ?? ($flash['slug'] ?? null),
             ],
         ];
     }

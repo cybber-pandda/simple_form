@@ -4,6 +4,9 @@ namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Notification;
+// Import your models if they exist
+use App\Models\Form; 
+use App\Models\Submission;
 
 class NewFormSubmission extends Notification
 {
@@ -12,7 +15,8 @@ class NewFormSubmission extends Notification
     protected $form;
     protected $submission;
 
-    public function __construct($form, $submission)
+    // Type hinting ensures you don't pass the wrong data by mistake
+    public function __construct(Form $form, Submission $submission)
     {
         $this->form = $form;
         $this->submission = $submission;
@@ -20,15 +24,14 @@ class NewFormSubmission extends Notification
 
     public function via($notifiable)
     {
-        // 'database' saves it to the notifications table we just created
         return ['database'];
     }
 
-    public function toArray($notifiable)
+    public function toDatabase($notifiable)
     {
         return [
             'title' => 'New Form Submission',
-            'message' => 'Someone submitted your form: "' . $this->form->title . '"',
+            'message' => 'Someone messaged you from the form "' . $this->form->title . '"',
             'form_id' => $this->form->id,
             'submission_id' => $this->submission->id,
             'type' => 'submission'
