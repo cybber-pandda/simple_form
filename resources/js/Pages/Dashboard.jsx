@@ -5,37 +5,37 @@ import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
 import React, { useState } from 'react';
-import { 
-    PlusIcon, 
-    LinkIcon, 
-    ChatBubbleLeftRightIcon, 
-    XMarkIcon, 
-    ClipboardIcon, 
+import {
+    PlusIcon,
+    LinkIcon,
+    ChatBubbleLeftRightIcon,
+    XMarkIcon,
+    ClipboardIcon,
     CheckIcon,
     ArrowTopRightOnSquareIcon,
     TrashIcon,
     ExclamationTriangleIcon,
-    ShieldCheckIcon
+    ShieldCheckIcon,
+    ClockIcon,
+    ChartBarIcon,
+    ArrowTrendingUpIcon
 } from '@heroicons/react/24/outline';
 
 export default function Dashboard({ totalForms, activeForms, totalSubmissions, forms = [] }) {
     const { auth } = usePage().props;
     const user = auth.user;
-    
-    // Verification Logic
+
     const isApproved = user.verification_status === 'approved';
     const isPendingSubmission = user.verification_status === 'pending' && !user.id_photo_path;
     const isUnderReview = user.verification_status === 'pending' && user.id_photo_path;
     const isRejected = user.verification_status === 'rejected';
 
     const hasForms = totalForms > 0;
-    
-    // Modal State
+
     const [selectedForm, setSelectedForm] = useState(null);
     const [formToDelete, setFormToDelete] = useState(null);
     const [copied, setCopied] = useState(false);
 
-    // Verification Form
     const { data, setData, post, processing, errors } = useForm({
         full_name: '',
         organization: '',
@@ -82,7 +82,6 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
         <AuthenticatedLayout header="Overview">
             <Head title="Dashboard" />
 
-            {/* Verification Under Review Alert */}
             {isUnderReview && (
                 <div className="max-w-7xl mx-auto mt-4 px-4 sm:px-6 lg:px-8">
                     <div className="bg-amber-50 border border-amber-200 rounded-xl sm:rounded-2xl p-3 sm:p-4 flex items-center gap-3 text-amber-800 shadow-sm">
@@ -94,21 +93,51 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
 
             <div className="py-4 sm:py-6">
                 <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 space-y-6 sm:space-y-8">
-                    
-                    {/* Stats Grid - Responsive Padding and Text */}
+
+                    {/* Stats Grid */}
                     <div className="grid grid-cols-1 gap-4 sm:gap-6 sm:grid-cols-3">
                         {[
-                            { label: 'Submissions', value: totalSubmissions || '0', icon: <ChatBubbleLeftRightIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" /> },
-                            { label: 'Active Forms', value: activeForms, icon: <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> },
-                            { label: 'Total Forms', value: totalForms, icon: null },
+                            {
+                                label: 'Submissions',
+                                value: totalSubmissions || '0',
+                                icon: <ChatBubbleLeftRightIcon className="w-4 h-4 sm:w-5 sm:h-5 text-blue-500" />,
+                                href: route('metrics.index') // Replace with your actual route name
+                            },
+                            {
+                                label: 'Active Forms',
+                                value: activeForms,
+                                icon: <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />,
+                                href: route('metrics.index')
+                            },
+                            {
+                                label: 'Total Forms',
+                                value: totalForms,
+                                icon: <ChartBarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />,
+                                href: route('metrics.index')
+                            },
                         ].map((stat, i) => (
-                            <div key={i} className="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-start">
-                                <div>
-                                    <p className="text-[10px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest">{stat.label}</p>
+                            <Link
+                                key={i}
+                                href={stat.href}
+                                className="group relative bg-white p-5 sm:p-8 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm flex justify-between items-start transition-all hover:border-indigo-300 hover:shadow-md overflow-hidden"
+                            >
+                                {/* Hover "Expand" Hint */}
+                                <div className="absolute inset-x-0 bottom-0 h-1 bg-indigo-500 transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+
+                                <div className="relative z-10">
+                                    <p className="text-[10px] sm:text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                        {stat.label}
+                                        <span className="opacity-0 group-hover:opacity-100 transition-opacity text-indigo-500 lowercase font-medium flex items-center">
+                                            &rarr; View Details
+                                        </span>
+                                    </p>
                                     <p className="mt-1 sm:mt-2 text-2xl sm:text-4xl font-black text-slate-900">{stat.value}</p>
                                 </div>
-                                {stat.icon}
-                            </div>
+
+                                <div className="p-2 bg-slate-50 rounded-xl group-hover:bg-indigo-50 group-hover:text-indigo-600 transition-colors">
+                                    {stat.icon}
+                                </div>
+                            </Link>
                         ))}
                     </div>
 
@@ -123,7 +152,7 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                                 <p className="max-w-md text-sm sm:text-lg font-medium text-slate-500 mb-6 sm:mb-10 leading-relaxed">
                                     {isApproved ? 'Start capturing data with our premium builder.' : 'Verification is required to start creating forms.'}
                                 </p>
-                                
+
                                 {isApproved ? (
                                     <Link href={route('forms.create')} className="w-full sm:w-auto">
                                         <PrimaryButton className="w-full justify-center">Create First Form</PrimaryButton>
@@ -145,45 +174,61 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                                     </Link>
                                 )}
                             </div>
-                            
+
                             <div className="grid grid-cols-1 gap-3 sm:gap-4">
                                 {forms.map((form) => (
-                                    <div 
-                                        key={form.id} 
+                                    <div
+                                        key={form.id}
                                         onClick={() => navigateToEdit(form.id)}
-                                        className={`group bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row justify-between items-center gap-4 transition-all relative ${isApproved ? 'hover:border-indigo-300 hover:shadow-md cursor-pointer' : 'opacity-75 cursor-default'}`}
+                                        className={`group bg-white p-4 sm:p-6 rounded-2xl sm:rounded-[2.5rem] border border-slate-100 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 transition-all relative ${isApproved ? 'hover:border-indigo-300 hover:shadow-md cursor-pointer' : 'opacity-75 cursor-default'}`}
                                     >
-                                        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
-                                            <div className="h-10 w-10 sm:h-12 sm:w-12 shrink-0 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
-                                                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                        <div className="flex items-center gap-3 sm:gap-4 flex-1">
+                                            <div className="h-10 w-10 sm:h-14 sm:w-14 shrink-0 rounded-xl sm:rounded-2xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-indigo-50 group-hover:text-indigo-500 transition-colors">
+                                                <svg className="w-5 h-5 sm:w-7 sm:h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                                             </div>
                                             <div className="truncate">
-                                                <h3 className="font-bold text-sm sm:text-base text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{form.title}</h3>
-                                                <p className="text-[10px] sm:text-xs text-slate-400 font-medium">Created {new Date(form.created_at).toLocaleDateString()}</p>
+                                                <h3 className="font-black text-sm sm:text-lg text-slate-900 group-hover:text-indigo-600 transition-colors truncate">{form.title}</h3>
+
+                                                {/* INJECTED METRICS ROW */}
+                                                <div className="flex flex-wrap items-center gap-y-1 gap-x-3 mt-1">
+                                                    <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400">
+                                                        <ClockIcon className="w-3 h-3" />
+                                                        {new Date(form.created_at).toLocaleDateString()}
+                                                    </div>
+                                                    <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-emerald-500">
+                                                        <ArrowTrendingUpIcon className="w-3 h-3" />
+                                                        Active
+                                                    </div>
+                                                    {form.submissions_count > 0 && (
+                                                        <div className="hidden sm:flex items-center gap-1 text-[10px] sm:text-xs font-bold text-indigo-400">
+                                                            <ChatBubbleLeftRightIcon className="w-3 h-3" />
+                                                            Last entry: {new Date().toLocaleDateString()}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </div>
                                         </div>
-                                        
-                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
-                                            <Link 
-                                                href={route('forms.submissions', form.id)} 
-                                                onClick={(e) => e.stopPropagation()} 
-                                                className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 bg-white border border-slate-100 text-slate-600 text-[10px] sm:text-xs font-bold rounded-xl hover:bg-slate-50 transition-all shadow-sm z-10"
+
+                                        <div className="flex items-center gap-2 w-full sm:w-auto justify-end border-t sm:border-t-0 pt-3 sm:pt-0">
+                                            <Link
+                                                href={route('forms.submissions', form.id)}
+                                                onClick={(e) => e.stopPropagation()}
+                                                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-1.5 px-4 py-2.5 bg-white border border-slate-100 text-slate-600 text-[10px] sm:text-xs font-black rounded-xl hover:bg-slate-50 transition-all shadow-sm z-10"
                                             >
                                                 <ChatBubbleLeftRightIcon className="w-3.5 h-3.5" />
-                                                {form.submissions_count || 0} <span className="hidden sm:inline">Submissions</span>
+                                                {form.submissions_count || 0} <span className="sm:inline">Submissions</span>
                                             </Link>
 
-                                            <button 
-                                                onClick={(e) => openLinkModal(e, form)} 
-                                                className="inline-flex items-center gap-1.5 px-3 py-2 sm:px-5 sm:py-2.5 bg-slate-900 text-white text-[10px] sm:text-xs font-bold rounded-xl hover:bg-indigo-600 transition-all shadow-md z-10"
+                                            <button
+                                                onClick={(e) => openLinkModal(e, form)}
+                                                className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-indigo-600 transition-all shadow-md z-10"
                                             >
-                                                <LinkIcon className="w-3.5 h-3.5" />
-                                                Link
+                                                <LinkIcon className="w-4 h-4" />
                                             </button>
 
-                                            <button 
-                                                onClick={(e) => confirmDelete(e, form)} 
-                                                className="p-2 sm:p-2.5 bg-white border border-slate-100 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all z-10"
+                                            <button
+                                                onClick={(e) => confirmDelete(e, form)}
+                                                className="p-2.5 bg-white border border-slate-100 text-slate-400 rounded-xl hover:bg-red-50 hover:text-red-500 transition-all z-10"
                                             >
                                                 <TrashIcon className="w-4 h-4" />
                                             </button>
@@ -196,7 +241,7 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                 </div>
             </div>
 
-            {/* MODALS - Adjusted for Mobile Screen Height & Text */}
+            {/* Verification Modal */}
             {(isPendingSubmission || isRejected) && (
                 <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md z-[200] flex items-end sm:items-center justify-center p-0 sm:p-4">
                     <div className="bg-white rounded-t-[2rem] sm:rounded-[2.5rem] p-6 sm:p-10 max-w-xl w-full shadow-2xl relative border border-white/20 animate-in slide-in-from-bottom duration-300">
@@ -206,8 +251,8 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                             </div>
                             <h3 className="text-xl sm:text-3xl font-black text-slate-900">Verification</h3>
                             <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1 sm:mt-2">
-                                {isRejected 
-                                    ? "Application rejected. Please update details." 
+                                {isRejected
+                                    ? "Application rejected. Please update details."
                                     : "Identity verification is required before creating forms."}
                             </p>
                         </div>
@@ -255,12 +300,12 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                     </div>
                 </div>
             )}
-            
-            {/* Share Link Modal - Mobile Optimized */}
+
+            {/* Share Link Modal */}
             {selectedForm && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
                     <div className="bg-white rounded-t-[2rem] sm:rounded-[2rem] p-6 sm:p-8 max-w-lg w-full shadow-2xl relative animate-in slide-in-from-bottom duration-300">
-                        <button 
+                        <button
                             onClick={() => setSelectedForm(null)}
                             className="absolute top-4 right-4 sm:top-6 sm:right-6 text-slate-400"
                         >
@@ -271,18 +316,17 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                             <h3 className="text-lg sm:text-2xl font-black text-slate-800">Share Form</h3>
                             <p className="text-slate-500 font-medium text-[11px] sm:text-sm mt-1">Copy the link below to share.</p>
                         </div>
-                        
+
                         <div className="flex items-center gap-2 bg-slate-50 p-3 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-100 mb-6">
-                            <input 
-                                readOnly 
-                                value={`${window.location.origin}/f/${selectedForm.slug}`} 
+                            <input
+                                readOnly
+                                value={`${window.location.origin}/f/${selectedForm.slug}`}
                                 className="flex-1 bg-transparent border-none focus:ring-0 text-[11px] sm:text-sm font-medium text-indigo-600 truncate"
                             />
-                            <button 
+                            <button
                                 onClick={copyToClipboard}
-                                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold transition-all ${
-                                    copied ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700 shadow-sm border border-slate-100'
-                                }`}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg sm:rounded-xl text-[10px] sm:text-sm font-bold transition-all ${copied ? 'bg-emerald-500 text-white' : 'bg-white text-slate-700 shadow-sm border border-slate-100'
+                                    }`}
                             >
                                 {copied ? <CheckIcon className="w-3 h-3 sm:w-4 sm:h-4" /> : <ClipboardIcon className="w-3 h-3 sm:w-4 sm:h-4" />}
                                 {copied ? 'Copied' : 'Copy'}
@@ -290,8 +334,8 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                         </div>
 
                         <div className="flex gap-3">
-                            <a 
-                                href={route('forms.show', selectedForm.slug)} 
+                            <a
+                                href={route('forms.show', selectedForm.slug)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="flex-1 flex items-center justify-center gap-2 py-3 sm:py-4 bg-slate-100 text-slate-700 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold"
@@ -299,7 +343,7 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                                 <ArrowTopRightOnSquareIcon className="w-4 h-4 sm:w-5 sm:h-5" />
                                 View
                             </a>
-                            <button 
+                            <button
                                 onClick={() => setSelectedForm(null)}
                                 className="flex-1 py-3 sm:py-4 bg-indigo-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-lg shadow-indigo-100"
                             >
@@ -310,7 +354,7 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                 </div>
             )}
 
-            {/* Delete Confirmation Modal - Simplified for Mobile */}
+            {/* Delete Confirmation Modal */}
             {formToDelete && (
                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[110] flex items-center justify-center p-4">
                     <div className="bg-white rounded-2xl sm:rounded-[2rem] p-6 sm:p-8 max-w-md w-full shadow-2xl border border-white/20">
@@ -318,20 +362,20 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                             <div className="mb-4 sm:mb-6 flex h-12 w-12 sm:h-16 sm:w-16 items-center justify-center rounded-xl sm:rounded-2xl bg-red-50 text-red-600">
                                 <ExclamationTriangleIcon className="h-6 w-6 sm:h-8 sm:w-8" />
                             </div>
-                            
+
                             <h3 className="text-lg sm:text-2xl font-black text-slate-900 mb-2">Delete Form?</h3>
                             <p className="text-[11px] sm:text-sm text-slate-500 font-medium mb-6 sm:mb-8 leading-relaxed">
                                 Are you sure? <span className="font-bold text-slate-800">"{formToDelete.title}"</span> and its submissions will be permanently lost.
                             </p>
 
                             <div className="flex w-full gap-2 sm:gap-3">
-                                <button 
+                                <button
                                     onClick={() => setFormToDelete(null)}
                                     className="flex-1 py-3 sm:py-4 bg-slate-100 text-slate-700 rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold"
                                 >
                                     Cancel
                                 </button>
-                                <button 
+                                <button
                                     onClick={handleDelete}
                                     className="flex-1 py-3 sm:py-4 bg-red-600 text-white rounded-xl sm:rounded-2xl text-xs sm:text-sm font-bold shadow-lg shadow-red-100"
                                 >

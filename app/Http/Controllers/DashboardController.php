@@ -16,7 +16,7 @@ class DashboardController extends Controller
 
         // Fetch forms with their submission count automatically attached
         $forms = Form::where('user_id', $user->id)
-            ->withCount('submissions') 
+            ->withCount('submissions')
             ->latest()
             ->get();
 
@@ -24,7 +24,24 @@ class DashboardController extends Controller
             'forms' => $forms,
             'totalForms' => $forms->count(),
             'activeForms' => $forms->where('is_active', true)->count(),
-            'totalSubmissions' => $forms->sum('submissions_count'), 
+            'totalSubmissions' => $forms->sum('submissions_count'),
+        ]);
+    }
+
+    public function metrics()
+    {
+        $user = Auth::user();
+
+        $topForms = $user->forms()
+            ->withCount('submissions')
+            ->orderBy('submissions_count', 'desc')
+            ->take(3)
+            ->get(['id', 'title']);
+
+        return Inertia::render('Metrics/Index', [
+            'totalForms' => $user->forms()->count(),
+            'totalSubmissions' => $user->submissions()->count(),
+            'topForms' => $topForms
         ]);
     }
 }

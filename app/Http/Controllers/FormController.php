@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
+use App\Notifications\NewFormSubmission;
 
 class FormController extends Controller
 {
@@ -23,7 +24,7 @@ class FormController extends Controller
     {
         $validated = $request->validate([
             'title'  => 'required|string|max:255',
-            'schema' => 'required|array', 
+            'schema' => 'required|array',
         ]);
 
         $form = Form::create([
@@ -37,7 +38,7 @@ class FormController extends Controller
         return redirect()->back()->with('flash', [
             'message' => 'Form published successfully!',
             'slug'    => $form->slug,
-            'id'      => $form->id, 
+            'id'      => $form->id,
         ]);
     }
 
@@ -73,15 +74,23 @@ class FormController extends Controller
      */
     public function submit(Request $request, $slug)
     {
+        // 1. Find the form
         $form = Form::where('slug', $slug)->where('is_active', true)->firstOrFail();
 
+        // 2. Validate the incoming data
         $validated = $request->validate([
             'data' => 'required|array',
         ]);
 
-        $form->submissions()->create([
+        // 3. Save the submission
+        $submission = $form->submissions()->create([
             'data' => $validated['data'],
         ]);
+
+        // --- STEP 3: TRIGGER NOTIFICATION ---
+        // We notify the user who OWNS the form ($form->user)
+        $form->user->notify(new NewFormSubmission($form, $submission));
+        // -------------------------------------
 
         return redirect()->back()->with('message', 'Thank you! Your response has been submitted.');
     }
