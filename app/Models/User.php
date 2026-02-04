@@ -25,6 +25,7 @@ class User extends Authenticatable
         'role',
         'status',
         'verification_status', // 'pending', 'approved', 'rejected'
+        'rejection_reason',
         'full_name',
         'organization',
         'id_number',

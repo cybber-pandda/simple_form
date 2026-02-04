@@ -24,14 +24,14 @@ class NotificationController extends Controller
         /** @var User $user */
         $user = Auth::user();
         $user->unreadNotifications->markAsRead();
-        
+
         return back();
     }
 
     public function destroy(Request $request)
     {
         $ids = $request->input('ids', []);
-        
+
         if (!empty($ids)) {
             Auth::user()->notifications()->whereIn('id', $ids)->delete();
         }
@@ -42,12 +42,26 @@ class NotificationController extends Controller
     public function markRead(Request $request)
     {
         $ids = $request->input('ids', []);
-        
+
         if (!empty($ids)) {
             Auth::user()->unreadNotifications()
                 ->whereIn('id', $ids)
                 ->update(['read_at' => now()]);
         }
+
+        return back();
+    }
+    public function markUnread(Request $request)
+    {
+        // Validate that we received an array of IDs
+        $request->validate([
+            'ids' => 'required|array',
+        ]);
+
+        // Set read_at to null for the specified notifications
+        $request->user()->notifications()
+            ->whereIn('id', $request->ids)
+            ->update(['read_at' => null]);
 
         return back();
     }

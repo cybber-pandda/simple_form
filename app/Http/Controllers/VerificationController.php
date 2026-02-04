@@ -7,28 +7,27 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Notification;
 use App\Notifications\AccountStatusUpdated;
+use App\Notifications\NewVerificationRequest;
 
 class VerificationController extends Controller
 {
     /**
      * Display the pending verifications list.
-     * Rendering path updated to match your file structure.
+     * Only accessible by Superadmins (Role 1).
      */
     public function index()
     {
-        // Only allow admins to view this list
         if (Auth::user()->role !== 1) {
             abort(403, 'Unauthorized access.');
         }
 
-        // Fetch users who have submitted an ID photo and are pending
         $pendingUsers = User::where('verification_status', 'pending')
             ->whereNotNull('id_photo_path')
             ->latest()
             ->get();
 
-        // Fix: Render path matches resources/js/Pages/Verifications/Index.jsx
         return Inertia::render('Verifications/Index', [
             'pendingUsers' => $pendingUsers
         ]);
@@ -45,13 +44,15 @@ class VerificationController extends Controller
             'id_photo' => 'required|image|mimes:jpeg,png,jpg|max:2048',
         ]);
 
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
-        // Clean up old ID if it exists
+        // Delete old ID photo if it exists to save storage space
         if ($user->id_photo_path) {
             Storage::disk('public')->delete($user->id_photo_path);
         }
 
+        // Store the new ID photo
         $path = $request->file('id_photo')->store('verifications', 'public');
 
         $user->update([
@@ -61,26 +62,55 @@ class VerificationController extends Controller
             'verification_status' => 'pending',
         ]);
 
-        return back()->with('message', 'Identification submitted for review.');
+        /**
+         * NOTIFY SUPERADMINS
+         * This triggers the bell icon for Admins. 
+         * Ensure NewVerificationRequest has 'mail' removed from its via() method.
+         */
+        $superAdmins = User::where('role', 1)->get();
+        Notification::send($superAdmins, new NewVerificationRequest($user));
+
+        return back()->with('message', 'Your identification has been submitted for review.');
     }
 
     /**
      * Update verification status (Approve/Reject).
      */
+    /**
+     * Update verification status (Approve/Reject).
+     */
     public function update(Request $request, User $user)
     {
+        // 1. Validate the input
         $request->validate([
             'status' => 'required|in:approved,rejected',
+            // Reason is required ONLY if the status is rejected
+            'reason' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
-        $user->update([
+        // 2. Prepare update data
+        $updateData = [
             'verification_status' => $request->status,
-        ]);
+        ];
 
-        // Trigger the Notification to the user being reviewed
-        $user->notify(new AccountStatusUpdated($request->status));
+        // 3. Handle the rejection reason column
+        if ($request->status === 'rejected') {
+            $updateData['rejection_reason'] = $request->reason;
+        } else {
+            // Clear the reason if they are now approved
+            $updateData['rejection_reason'] = null;
+        }
+
+        $user->update($updateData);
+
+        /**
+         * NOTIFY THE CREATOR
+         * We pass the status and the reason to the notification class
+         * so it can be included in the Email and the Database notification.
+         */
+        $user->notify(new AccountStatusUpdated($request->status, $request->reason));
 
         return redirect()->route('admin.verifications.index')
-            ->with('message', "User has been " . ucfirst($request->status) . ".");
+            ->with('message', "The user's verification request has been " . $request->status . ".");
     }
 }

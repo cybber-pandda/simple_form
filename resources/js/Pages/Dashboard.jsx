@@ -257,7 +257,21 @@ export default function Dashboard({ totalForms, activeForms, totalSubmissions, f
                             </p>
                         </div>
 
+                        {/* --- REJECTION FEEDBACK BOX --- */}
+                        {isRejected && user.rejection_reason && (
+                            <div className="mb-6 bg-red-50 border border-red-100 p-4 rounded-2xl flex items-start gap-3">
+                                <ChatBubbleLeftRightIcon className="h-5 w-5 text-red-500 shrink-0 mt-0.5" />
+                                <div className="text-left">
+                                    <h4 className="text-[10px] font-black uppercase tracking-widest text-red-800">Feedback from Admin</h4>
+                                    <p className="text-sm text-red-700 font-medium leading-relaxed mt-1">
+                                        "{user.rejection_reason}"
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
                         <form onSubmit={submitVerification} className="space-y-4 sm:space-y-5">
+                            {/* ... existing form fields ... */}
                             <div>
                                 <InputLabel htmlFor="full_name" value="Full Legal Name" className="text-xs" />
                                 <TextInput

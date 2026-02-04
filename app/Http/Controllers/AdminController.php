@@ -9,8 +9,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail; // Added for email
-use App\Mail\WelcomeNewUser;        // Added mailable import
+use Illuminate\Support\Facades\Mail;
+use App\Mail\WelcomeNewUser;
 use App\Notifications\AccountStatusUpdated;
 
 class AdminController extends Controller
@@ -21,12 +21,11 @@ class AdminController extends Controller
     public function index()
     {
         return Inertia::render('Admin/Dashboard', [
-
             // Global counts for the metrics cards
             'totalUsers' => User::count(),
             'totalForms' => Form::count(),
 
-            // Optional: Get the 5 most recent forms across the whole site
+            // Get the 10 most recent forms across the whole site
             'recentForms' => Form::with('user')->latest()->take(10)->get(),
         ]);
     }
@@ -75,12 +74,15 @@ class AdminController extends Controller
             'name'     => $validated['name'],
             'email'    => $validated['email'],
             'role'     => $validated['role'],
-            'status'   => 1,
+            'status'   => 1, // Created as Active
             'password' => Hash::make($password),
         ]);
 
-        // NEW FEATURE: Send the Welcome Email via Mailtrap
+        // Send the Welcome Email (Credentials)
         Mail::to($user->email)->send(new WelcomeNewUser($user, $password));
+
+        // Also add a "Welcome" notification to their in-app bell icon
+        $user->notify(new AccountStatusUpdated('activated'));
 
         return redirect()->route('admin.users')->with('message', 'User created and credentials sent to email.');
     }
@@ -134,20 +136,22 @@ class AdminController extends Controller
             return back()->with('error', 'You cannot deactivate yourself.');
         }
 
-        // Toggle the status
+        // Toggle the status (1 = Active, 0 = Inactive)
         $user->status = $user->status === 1 ? 0 : 1;
         $user->save();
 
-        // NEW FEATURE: Trigger Notification
-        // If status is 1, account was just activated; if 0, it was deactivated.
+        // Determine notification type
         $statusType = $user->status === 1 ? 'activated' : 'deactivated';
 
-        // Notify the user of the change
+        // Notify the user via Email and Database (Bell Icon)
         $user->notify(new AccountStatusUpdated($statusType));
 
-        return back()->with('message', 'User status updated to ' . $statusType . '.');
+        return back()->with('message', 'User account has been ' . $statusType . '.');
     }
 
+    /**
+     * Display Roles page.
+     */
     public function roles()
     {
         return Inertia::render('Admin/Roles');

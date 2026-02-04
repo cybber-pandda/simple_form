@@ -96,6 +96,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/notifications/mark-read', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
     Route::post('/notifications/mark-read-selected', [NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::delete('/notifications/delete-selected', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::post('/notifications/mark-unread', [NotificationController::class, 'markUnread'])->name('notifications.markUnread');
 
     // --- New Verification Submission Route ---
     Route::post('/verification/submit', [VerificationController::class, 'store'])->name('verification.store');
