@@ -6,7 +6,7 @@ import Modal from '@/Components/Modal';
 
 export default function Index({ pendingUsers = [] }) {
     const [selectedImage, setSelectedImage] = useState(null);
-    
+
     // --- Approval State ---
     const [confirmingUserApproval, setConfirmingUserApproval] = useState(false);
     const [userToApprove, setUserToApprove] = useState(null);
@@ -14,7 +14,7 @@ export default function Index({ pendingUsers = [] }) {
     // --- Rejection State & Form ---
     const [confirmingUserRejection, setConfirmingUserRejection] = useState(false);
     const [userToReject, setUserToReject] = useState(null);
-    
+
     const { data, setData, patch, processing, reset, errors } = useForm({
         status: 'rejected',
         reason: '',
@@ -90,14 +90,14 @@ export default function Index({ pendingUsers = [] }) {
                                 </div>
 
                                 <div className="flex gap-3">
-                                    <button 
+                                    <button
                                         onClick={() => openApprovalModal(user)}
                                         className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-4 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-indigo-600 transition-all shadow-lg active:translate-y-0.5"
                                     >
                                         <CheckBadgeIcon className="w-4 h-4" /> Approve
                                     </button>
 
-                                    <button 
+                                    <button
                                         onClick={() => openRejectionModal(user)}
                                         className="inline-flex items-center gap-2 px-4 py-4 bg-white border border-slate-100 text-red-500 text-xs font-bold rounded-xl hover:bg-red-50 hover:border-red-100 transition-all shadow-sm active:translate-y-0.5"
                                     >
@@ -112,17 +112,39 @@ export default function Index({ pendingUsers = [] }) {
 
             {/* --- APPROVAL MODAL --- */}
             <Modal show={confirmingUserApproval} onClose={() => setConfirmingUserApproval(false)} maxWidth="md">
-                <div className="text-center">
-                    <div className="bg-indigo-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                        <CheckBadgeIcon className="w-8 h-8 text-indigo-600" />
+                <div className="text-center p-2">
+                    {/* Centered Icon Container */}
+                    <div className="bg-indigo-50 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+                        <CheckBadgeIcon className="w-10 h-10 text-indigo-600" />
                     </div>
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900">Approve Access?</h2>
-                    <p className="mt-4 text-slate-500 font-medium text-sm md:text-base px-2">
-                        This will verify <span className="text-slate-900 font-bold">{userToApprove?.full_name}</span>.
+
+                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Approve Access?</h2>
+
+                    <p className="mt-4 text-slate-500 font-medium text-base px-4 leading-relaxed">
+                        Verifying <span className="text-slate-900 font-bold">{userToApprove?.full_name}</span> will grant them full access. They will be notified via email.
                     </p>
-                    <div className="mt-10 grid grid-cols-2 gap-3">
-                        <button onClick={() => setConfirmingUserApproval(false)} className="px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-sm">Cancel</button>
-                        <button onClick={handleConfirmApprove} className="px-6 py-4 bg-indigo-600 text-white font-bold rounded-2xl text-sm shadow-lg shadow-indigo-100">Confirm</button>
+
+                    {/* Action Buttons */}
+                    <div className="mt-10 grid grid-cols-2 gap-4">
+                        <button
+                            type="button"
+                            onClick={() => setConfirmingUserApproval(false)}
+                            className="px-6 py-5 bg-slate-100 text-slate-600 font-bold rounded-[1.5rem] text-sm hover:bg-slate-200 transition-all active:scale-[0.98]"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleConfirmApprove}
+                            className="px-6 py-5 bg-indigo-600 text-white font-bold rounded-[1.5rem] text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]"
+                        >
+                            Confirm
+                        </button>
+                    </div>
+
+                    {/* Footer Label */}
+                    <div className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+                        Identity Verification
                     </div>
                 </div>
             </Modal>
@@ -133,7 +155,7 @@ export default function Index({ pendingUsers = [] }) {
                     <div className="bg-red-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6">
                         <ChatBubbleLeftEllipsisIcon className="w-8 h-8 text-red-500" />
                     </div>
-                    
+
                     <h2 className="text-xl md:text-2xl font-black text-slate-900">Reject Verification</h2>
                     <p className="mt-4 text-slate-500 font-medium text-sm px-2 text-center leading-relaxed">
                         Please provide a reason for rejecting <span className="font-bold text-slate-900">{userToReject?.full_name}</span>. This will be shown to the user.
@@ -151,14 +173,14 @@ export default function Index({ pendingUsers = [] }) {
                     </div>
 
                     <div className="mt-8 grid grid-cols-2 gap-3">
-                        <button 
+                        <button
                             type="button"
-                            onClick={closeRejectionModal} 
+                            onClick={closeRejectionModal}
                             className="px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-sm transition-all"
                         >
                             Back
                         </button>
-                        <button 
+                        <button
                             type="submit"
                             disabled={processing}
                             className="px-6 py-4 bg-red-500 text-white font-bold rounded-2xl text-sm shadow-lg shadow-red-100 hover:bg-red-600 transition-all disabled:opacity-50"

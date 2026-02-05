@@ -1,9 +1,13 @@
 import { Head, useForm, usePage } from '@inertiajs/react';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 
 export default function PublicView({ form }) {
     const { props } = usePage();
     const [submitted, setSubmitted] = useState(false);
+    const [validationErrors, setValidationErrors] = useState({});
+    
+    // Create a ref object to store references to each question element
+    const questionRefs = useRef({});
 
     // Initialize the answers object
     const initialAnswers = {};
@@ -17,12 +21,65 @@ export default function PublicView({ form }) {
 
     const submit = (e) => {
         e.preventDefault();
+        
+        const newErrors = {};
+        let firstErrorId = null;
+
+        // Validation logic
+        form.schema.forEach(field => {
+            let hasError = false;
+
+            // Checkbox specific validation
+            if (field.type === 'checkbox' && field.required) {
+                const selectedOptions = data.data[field.id] || [];
+                if (selectedOptions.length === 0) {
+                    newErrors[field.id] = "Required: Select at least one.";
+                    hasError = true;
+                }
+            } 
+            // Other fields validation (Standard required)
+            else if (field.required && !data.data[field.id]) {
+                newErrors[field.id] = "This field is required.";
+                hasError = true;
+            }
+
+            // Capture the first error ID for scrolling
+            if (hasError && !firstErrorId) {
+                firstErrorId = field.id;
+            }
+        });
+
+        if (Object.keys(newErrors).length > 0) {
+            setValidationErrors(newErrors);
+
+            // Auto-scroll to the first problematic question
+            if (firstErrorId && questionRefs.current[firstErrorId]) {
+                questionRefs.current[firstErrorId].scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center' // Position the question in the center of the screen
+                });
+            }
+            return;
+        }
+
+        // Clear local errors before final submission
+        setValidationErrors({});
+
         post(route('forms.submit', form.slug), {
             onSuccess: () => setSubmitted(true),
         });
     };
 
     const handleAnswerChange = (fieldId, value) => {
+        // Clear error as soon as user interacts
+        if (validationErrors[fieldId]) {
+            setValidationErrors(prev => {
+                const updated = { ...prev };
+                delete updated[fieldId];
+                return updated;
+            });
+        }
+
         setData('data', {
             ...data.data,
             [fieldId]: value
@@ -74,38 +131,46 @@ export default function PublicView({ form }) {
 
                     <form onSubmit={submit} className="space-y-8 sm:space-y-12">
                         {form.schema.map((field) => (
-                            <div key={field.id} className="space-y-4">
-                                <label className="block text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-[0.15em] ml-1">
-                                    {field.label} {field.required && <span className="text-red-500 font-bold">*</span>}
-                                </label>
+                            <div 
+                                key={field.id} 
+                                ref={el => questionRefs.current[field.id] = el} // Assign ref to each question container
+                                className="space-y-4 scroll-mt-20"
+                            >
+                                <div className="flex justify-between items-end mb-1">
+                                    <label className="block text-[10px] sm:text-xs font-black text-slate-800 uppercase tracking-[0.15em] ml-1">
+                                        {field.label} {field.required && <span className="text-red-500 font-bold">*</span>}
+                                    </label>
+                                    
+                                    {/* Custom Inline Warning Label */}
+                                    {validationErrors[field.id] && (
+                                        <span className="text-[9px] sm:text-[10px] font-bold text-red-500 uppercase tracking-wider animate-in fade-in slide-in-from-right-2">
+                                            {validationErrors[field.id]}
+                                        </span>
+                                    )}
+                                </div>
 
                                 {field.type === 'textarea' ? (
                                     <textarea
                                         value={data.data[field.id]}
                                         onChange={e => handleAnswerChange(field.id, e.target.value)}
                                         placeholder="Type your message here..."
-                                        className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium min-h-[140px] text-slate-700 placeholder:text-slate-300"
-                                        required={field.required}
+                                        className={`w-full bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium min-h-[140px] text-slate-700 placeholder:text-slate-300 ${validationErrors[field.id] ? 'ring-2 ring-red-100 border-red-200' : ''}`}
                                     />
                                 ) : field.type === 'dropdown' ? (
                                     <div className="relative">
                                         <select
                                             value={data.data[field.id]}
                                             onChange={e => handleAnswerChange(field.id, e.target.value)}
-                                            className="w-full appearance-none bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700"
-                                            required={field.required}
+                                            className={`w-full appearance-none bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 ${validationErrors[field.id] ? 'ring-2 ring-red-100 border-red-200' : ''}`}
                                         >
                                             <option value="">Select an option</option>
                                             {field.options.map((opt, i) => (
                                                 <option key={i} value={opt}>{opt}</option>
                                             ))}
                                         </select>
-                                        <div className="absolute inset-y-0 right-4 flex items-center pointer-events-none">
-                                            <svg className="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" /></svg>
-                                        </div>
                                     </div>
                                 ) : ['radio', 'checkbox'].includes(field.type) ? (
-                                    <div className="grid gap-2 sm:gap-3">
+                                    <div className={`grid gap-2 sm:gap-3 p-1 rounded-2xl transition-all ${validationErrors[field.id] ? 'bg-red-50/50 ring-1 ring-red-100' : ''}`}>
                                         {field.options.map((option, idx) => {
                                             const isSelected = field.type === 'radio' 
                                                 ? data.data[field.id] === option 
@@ -133,7 +198,6 @@ export default function PublicView({ form }) {
                                                                 }
                                                             }}
                                                             className={`w-6 h-6 text-indigo-600 border-slate-300 focus:ring-indigo-500 focus:ring-offset-0 ${field.type === 'radio' ? 'rounded-full' : 'rounded-lg'}`}
-                                                            required={field.required && field.type === 'radio' && !data.data[field.id]}
                                                         />
                                                     </div>
                                                     <span className={`font-bold transition-colors ${isSelected ? 'text-indigo-900' : 'text-slate-600'}`}>
@@ -148,9 +212,8 @@ export default function PublicView({ form }) {
                                         type={field.type}
                                         value={data.data[field.id]}
                                         onChange={e => handleAnswerChange(field.id, e.target.value)}
-                                        className="w-full bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 placeholder:text-slate-300"
+                                        className={`w-full bg-slate-50 border-slate-100 rounded-2xl p-4 sm:p-5 focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all font-medium text-slate-700 placeholder:text-slate-300 ${validationErrors[field.id] ? 'ring-2 ring-red-100 border-red-200' : ''}`}
                                         placeholder={`Enter ${field.label.toLowerCase()}...`}
-                                        required={field.required}
                                     />
                                 )}
                             </div>
