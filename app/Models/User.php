@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class User extends Authenticatable
 {
@@ -21,9 +22,13 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'avatar', // Added for Google/DiceBear photos
         'password',
+        'google_id',
+        'has_password',
         'role',
         'status',
+        'is_admin',
         'verification_status', // 'pending', 'approved', 'rejected'
         'rejection_reason',
         'full_name',
@@ -52,7 +57,26 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'has_password' => 'boolean',
         ];
+    }
+
+    /**
+     * Accessor for the user's avatar.
+     * If the 'avatar' column is empty, it generates a random animated 
+     * character using DiceBear based on the user's name.
+     */
+    protected function avatar(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // Return Google photo if it exists in the database
+                if ($value) return $value;
+
+                // Return animated avatar as fallback
+                return "https://api.dicebear.com/7.x/adventurer/svg?seed=" . urlencode($this->name);
+            },
+        );
     }
 
     // --- Roles ---

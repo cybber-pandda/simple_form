@@ -8,6 +8,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -29,15 +30,39 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        // 1. Fill the basic info (Safe logic for Google vs Traditional)
+        if ($user->google_id) {
+            // Google users: only update name (email is protected)
+            $user->fill($request->safe()->only(['name']));
+        } else {
+            // Traditional users: update all validated fields
+            $user->fill($request->validated());
         }
 
-        $request->user()->save();
+        // 2. Handle File Upload Logic
+        if ($request->hasFile('avatar_file')) {
+            // Delete old local avatar if it exists (don't delete if it's a Google/DiceBear URL)
+            if ($user->avatar && !str_contains($user->avatar, 'http')) {
+                Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+            }
 
-        return Redirect::route('profile.edit');
+            // Store the new file in 'storage/app/public/avatars'
+            $path = $request->file('avatar_file')->store('avatars', 'public');
+            
+            // Save the public URL (e.g., /storage/avatars/filename.jpg)
+            $user->avatar = Storage::url($path);
+        }
+
+        // 3. Reset email verification if email changed
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**
@@ -45,13 +70,19 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
         $user = $request->user();
 
+        // Use the has_password flag to determine if verification is needed
+        $request->validate([
+            'password' => $user->has_password ? ['required', 'current_password'] : ['nullable'],
+        ]);
+
         Auth::logout();
+
+        // Delete profile picture from storage if it's a local file
+        if ($user->avatar && !str_contains($user->avatar, 'http')) {
+            Storage::disk('public')->delete(str_replace('/storage/', '', $user->avatar));
+        }
 
         $user->delete();
 

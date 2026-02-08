@@ -131,11 +131,14 @@ export default function AuthenticatedLayout({ header, children }) {
                                     <Dropdown.Trigger>
                                         <button
                                             type="button"
-                                            className="inline-flex items-center gap-2 rounded-2xl border border-transparent bg-slate-50 px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 focus:outline-none"
+                                            className="inline-flex items-center gap-3 rounded-2xl border border-transparent bg-slate-50 pl-2 pr-4 py-1.5 text-sm font-bold text-slate-600 transition-all hover:bg-slate-100 focus:outline-none"
                                         >
-                                            <div className="h-6 w-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center text-[10px]">
-                                                {user.name.charAt(0)}
-                                            </div>
+                                            {/* Profile Avatar Image */}
+                                            <img 
+                                                src={user.avatar} 
+                                                alt={user.name} 
+                                                className="h-8 w-8 rounded-full border border-indigo-100 object-cover shadow-sm"
+                                            />
                                             {user.name}
                                             <svg className="h-4 w-4 text-slate-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                                 <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -183,14 +186,16 @@ export default function AuthenticatedLayout({ header, children }) {
                 </div>
 
                 {/* --- FLOATING MOBILE MENU --- */}
-                {/* Changed to absolute positioning to float over the main content */}
                 <div className={(showingNavigationDropdown ? 'block' : 'hidden') + ' sm:hidden absolute top-[5.5rem] left-4 right-4 z-[60]'}>
                     <div className="bg-white/95 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-slate-200/60 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
                         <div className="px-6 py-6 border-b border-slate-100 bg-slate-50/50">
                             <div className="flex items-center gap-4">
-                                <div className="h-12 w-12 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-lg shadow-lg">
-                                    {user.name.charAt(0)}
-                                </div>
+                                {/* Mobile Profile Avatar */}
+                                <img 
+                                    src={user.avatar} 
+                                    alt={user.name} 
+                                    className="h-12 w-12 rounded-full border-2 border-indigo-500 object-cover shadow-lg"
+                                />
                                 <div>
                                     <div className="font-black text-slate-900 leading-tight">{user.name}</div>
                                     <div className="text-[10px] font-medium text-slate-400 uppercase tracking-widest mt-1">{user.email}</div>

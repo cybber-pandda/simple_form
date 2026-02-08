@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
+use App\Http\Controllers\Auth\GoogleController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,9 @@ Route::get('/', function () {
     ]);
 });
 
+Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
+// Update this line in web.php
+Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 Route::get('/f/{slug}', [FormController::class, 'show'])->name('forms.public');
 Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.submit');
 
@@ -114,15 +118,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-    // --- Form Management (Protected by Creator Verification Middleware) ---
-    Route::middleware(['creator.verified'])->group(function () {
-        Route::resource('forms', FormController::class)->except(['index']);
-        Route::get('/forms/create', [FormController::class, 'create'])->name('forms.create');
-        Route::post('/forms', [FormController::class, 'store'])->name('forms.store');
-        Route::get('/forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
-        Route::get('/forms/{form}/submissions', [FormController::class, 'submissions'])->name('forms.submissions');
-    });
 });
 
 /*

@@ -15,16 +15,28 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+
         return [
             'name' => ['required', 'string', 'max:255'],
+            
             'email' => [
-                'required',
+                // If the user has a google_id, email is optional/nullable 
+                // because the input is disabled and not sent by the frontend.
+                $user->google_id ? 'nullable' : 'required',
                 'string',
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(User::class)->ignore($user->id),
             ],
+
+            /**
+             * The avatar field stores the URL (Google or DiceBear).
+             * We set it to nullable and string with a high character limit 
+             * to accommodate long CDN or OAuth image URLs.
+             */
+            'avatar' => ['nullable', 'string', 'max:1000'], 
         ];
     }
 }
