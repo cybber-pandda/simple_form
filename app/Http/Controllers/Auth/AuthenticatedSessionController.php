@@ -27,7 +27,7 @@ class AuthenticatedSessionController extends Controller
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request): RedirectResponse
+    public function store(LoginRequest $request)
     {
         // 1. Authenticate the credentials
         $request->authenticate();
@@ -49,19 +49,19 @@ class AuthenticatedSessionController extends Controller
         // 4. ROLE-BASED REDIRECTION
         $user = Auth::user();
 
-        // If Role is 1 (Super Admin), send to the Admin Dashboard
-        if ($user->role === 1) {
-            return redirect()->intended(route('admin.dashboard'));
-        }
+        // Determine the intended route based on role
+        $intendedRoute = $user->role === 1 
+            ? route('admin.dashboard') 
+            : route('dashboard');
 
-        // Otherwise (Creator / Role 0), send to the standard Dashboard
-        return redirect()->intended(route('dashboard'));
+        // Use Inertia::location to replace history and prevent back navigation
+        return Inertia::location($intendedRoute);
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request)
     {
         Auth::guard('web')->logout();
 
@@ -69,6 +69,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        // CRITICAL: Use Inertia::location() to force a full page reload
+        // This prevents showing cached dashboard before redirect
+        return Inertia::location(route('login'));
     }
 }

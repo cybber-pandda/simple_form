@@ -30,36 +30,29 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $user = $request->user();
+        $user  = $request->user();
         $flash = $request->session()->get('flash') ?? [];
 
         return [
             ...parent::share($request),
-            
+
             'auth' => [
                 'user' => $user,
-                
-                // Returns the total number of unread alerts for the bell badge
+
+                // Bell badge count
                 'unread_notifications_count' => $user 
                     ? $user->unreadNotifications()->count() 
                     : 0,
 
-                /**
-                 * DYNAMIC NOTIFICATIONS
-                 * Available for all authenticated users with readable timestamps.
-                 */
+                // Custom mapped notifications (your original logic)
                 'notifications' => $user 
                     ? $user->unreadNotifications()->take(5)->get()->map(function ($n) use ($user) {
-                        
-                        /**
-                         * LOGIC:
-                         * 1. Check if 'route_name' exists in the notification's database JSON.
-                         * 2. If it exists but is NULL (like in Account Updates), we keep it NULL.
-                         * 3. If the key doesn't exist at all, then we apply the fallback route.
-                         */
-                        $routeName = array_key_exists('route_name', $n->data) 
-                            ? $n->data['route_name'] 
-                            : (($user->role === 1) ? 'admin.verifications.index' : 'notifications.index');
+
+                        $routeName = array_key_exists('route_name', $n->data)
+                            ? $n->data['route_name']
+                            : (($user->role === 1) 
+                                ? 'admin.verifications.index' 
+                                : 'notifications.index');
 
                         return [
                             'id' => $n->id,
@@ -67,9 +60,8 @@ class HandleInertiaRequests extends Middleware
                                 'title'      => $n->data['title'] ?? 'System Update',
                                 'message'    => $n->data['message'] ?? 'A new event has occurred.',
                                 'route_name' => $routeName,
-                                'params'     => $n->data['params'] ?? [], // Pass through any route parameters (like submission ID)
+                                'params'     => $n->data['params'] ?? [],
                             ],
-                            // Readable format (Feb 4, 2026 • 5:05 AM)
                             'created_at' => $n->created_at->format('M j, Y • g:i A'),
                             'read_at'    => $n->read_at,
                         ];
@@ -77,11 +69,17 @@ class HandleInertiaRequests extends Middleware
                     : [],
             ],
 
+            // 🔥 Added for login/back-button fix
+            'post_login_redirect' => fn () => $request->session()->get('post_login_redirect', false),
+            'just_logged_out'     => fn () => $request->session()->get('just_logged_out', false),
+
+            // Ziggy routes
             'ziggy' => fn() => [
                 ...(new Ziggy)->toArray(),
                 'location' => $request->url(),
             ],
 
+            // Flash messages
             'flash' => [
                 'message' => fn() => $request->session()->get('message') ?? ($flash['message'] ?? null),
                 'id'      => fn() => $request->session()->get('id')      ?? ($flash['id'] ?? null),

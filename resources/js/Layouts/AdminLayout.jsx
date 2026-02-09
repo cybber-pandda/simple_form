@@ -1,5 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link } from '@inertiajs/react';
+import { usePreventAuthBack } from '@/Hooks/usePreventAuthBack';
 import { 
     ChartBarIcon, 
     UsersIcon, 
@@ -10,6 +11,8 @@ import {
 
 export default function AdminLayout({ children, header, title }) {
     const isRoute = (name) => route().current(name);
+
+    usePreventAuthBack();
 
     const navItems = [
         { label: 'Metrics', icon: ChartBarIcon, route: 'admin.dashboard' },

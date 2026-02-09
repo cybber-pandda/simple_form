@@ -3,7 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\FormController;
-use App\Http\Controllers\VerificationController; // Import the new controller
+use App\Http\Controllers\VerificationController;
 use App\Models\Form;
 use App\Models\Submission;
 use Carbon\Carbon;
@@ -32,7 +32,6 @@ Route::get('/', function () {
 });
 
 Route::get('auth/google', [GoogleController::class, 'redirectToGoogle'])->name('auth.google');
-// Update this line in web.php
 Route::get('/auth/google/callback', [GoogleController::class, 'handleGoogleCallback'])->name('auth.google.callback');
 Route::get('/f/{slug}', [FormController::class, 'show'])->name('forms.public');
 Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.submit');
@@ -40,10 +39,11 @@ Route::post('/f/{slug}/submit', [FormController::class, 'submit'])->name('forms.
 /*
 |--------------------------------------------------------------------------
 | Authenticated & Verified Routes (Creators)
+| ⭐ CRITICAL: Added PreventDashboardCache middleware to prevent caching after logout
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth', 'verified', \App\Http\Middleware\PreventDashboardCache::class])->group(function () {
 
     Route::get('/dashboard', function () {
         $user = Auth::user();
@@ -61,14 +61,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('/metrics', function (Request $request) {
         $user = Auth::user();
-        $range = $request->input('range', 'week'); // Default to week
+        $range = $request->input('range', 'week');
 
-        // Determine the start date based on filter
         $startDate = match ($range) {
             'day'   => Carbon::today(),
             'month' => Carbon::now()->subMonth(),
             'year'  => Carbon::now()->subYear(),
-            default => Carbon::now()->subDays(6), // 'week'
+            default => Carbon::now()->subDays(6),
         };
 
         $topForms = Form::where('user_id', $user->id)
@@ -91,13 +90,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
             'totalSubmissions' => Form::where('user_id', $user->id)->withCount('submissions')->get()->sum('submissions_count'),
             'topForms'         => $topForms,
             'trendData'        => $trendData,
-            'currentFilter'    => $range, // Send back to React to keep button active
+            'currentFilter'    => $range,
         ]);
     })->name('metrics.index');
 
     // --- Notification Routes ---
-    Route::get('/notifications', [App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
-    Route::post('/notifications/mark-read', [App\Http\Controllers\NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
     Route::post('/notifications/mark-read-selected', [NotificationController::class, 'markRead'])->name('notifications.markRead');
     Route::delete('/notifications/delete-selected', [NotificationController::class, 'destroy'])->name('notifications.destroy');
     Route::post('/notifications/mark-unread', [NotificationController::class, 'markUnread'])->name('notifications.markUnread');
@@ -123,16 +122,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
 /*
 |--------------------------------------------------------------------------
 | Super Admin Exclusive Routes
+| ⭐ CRITICAL: Added PreventDashboardCache middleware here too
 |--------------------------------------------------------------------------
 */
 
-Route::middleware(['auth', 'superadmin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth', 'superadmin', \App\Http\Middleware\PreventDashboardCache::class])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
     Route::get('/users', [AdminController::class, 'users'])->name('users');
     Route::get('/users/create', [AdminController::class, 'create'])->name('users.create');
     Route::get('/roles', [AdminController::class, 'roles'])->name('roles');
 
-    // --- New Admin Verification Review Routes ---
+    // --- Admin Verification Review Routes ---
     Route::get('/verifications', [VerificationController::class, 'index'])->name('verifications.index');
     Route::patch('/verifications/{user}', [VerificationController::class, 'update'])->name('verifications.update');
 

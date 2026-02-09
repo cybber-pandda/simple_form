@@ -5,17 +5,22 @@ import NotificationToast from '@/Components/NotificationToast';
 import ResponsiveNavLink from '@/Components/ResponsiveNavLink';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import { usePreventAuthBack } from '@/Hooks/usePreventAuthBack';
 
-export default function AuthenticatedLayout({ header, children }) {
-    // Access auth data from updated Middleware
+
+export default function AuthenticatedLayout({ header, children }) {  // ✅ Removed 'user' prop
+    // Apply the history prevention hook
+    usePreventAuthBack();
+    
+    // Access auth data from Middleware
     const { auth } = usePage().props;
-    const user = auth.user;
-    const unreadCount = auth.unread_notifications_count;
+    const user = auth.user;  // ✅ Get user from auth
+    const unreadCount = auth.unread_notifications_count || 0;
     const notifications = auth.notifications || []; 
 
     // Logic for roles and status
-    const isDeactivated = user.status === 0;
-    const isSuperAdmin = user.role === 1; 
+    const isDeactivated = user?.status === 0;  // ✅ Optional chaining for safety
+    const isSuperAdmin = user?.role === 1; 
     
     const [showingNavigationDropdown, setShowingNavigationDropdown] = useState(false);
 

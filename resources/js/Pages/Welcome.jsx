@@ -1,4 +1,5 @@
 import React from 'react';
+import WelcomePageHistoryManager from '@/Components/WelcomePageHistoryManager';
 import { Link, Head } from '@inertiajs/react';
 import { 
   PlusCircle, 
@@ -14,7 +15,8 @@ import { motion } from 'framer-motion';
 
 export default function Welcome({ auth, canLogin, canRegister }) {
     return (
-        <>
+         <WelcomePageHistoryManager>
+        
             <Head title="Welcome to FormFlow" />
             
             <div className="min-h-screen bg-[#FDFDFF] text-slate-900 font-sans selection:bg-indigo-100">
@@ -152,6 +154,6 @@ export default function Welcome({ auth, canLogin, canRegister }) {
                     </div>
                 </section>
             </div>
-        </>
+        </WelcomePageHistoryManager>
     );
 }
