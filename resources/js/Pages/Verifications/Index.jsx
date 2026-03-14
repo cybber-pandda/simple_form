@@ -1,17 +1,22 @@
 import AdminLayout from '@/Layouts/AdminLayout';
 import { router, useForm } from '@inertiajs/react';
-import { CheckBadgeIcon, XCircleIcon, EyeIcon, ChatBubbleLeftEllipsisIcon } from '@heroicons/react/24/outline';
+import { 
+    CheckBadgeIcon, 
+    XCircleIcon, 
+    EyeIcon, 
+    ChatBubbleLeftEllipsisIcon,
+    XMarkIcon 
+} from '@heroicons/react/24/outline';
 import React, { useState } from 'react';
-import Modal from '@/Components/Modal';
+import Swal from 'sweetalert2'; 
 
 export default function Index({ pendingUsers = [] }) {
     const [selectedImage, setSelectedImage] = useState(null);
 
-    // --- Approval State ---
+    // --- State for Modals ---
     const [confirmingUserApproval, setConfirmingUserApproval] = useState(false);
     const [userToApprove, setUserToApprove] = useState(null);
 
-    // --- Rejection State & Form ---
     const [confirmingUserRejection, setConfirmingUserRejection] = useState(false);
     const [userToReject, setUserToReject] = useState(null);
 
@@ -20,7 +25,20 @@ export default function Index({ pendingUsers = [] }) {
         reason: '',
     });
 
-    // --- Approval Actions ---
+    // --- Helper for Toast ---
+    const showToast = (title, icon = 'success') => {
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: title,
+            showConfirmButton: false,
+            timer: 2000,
+            timerProgressBar: true,
+        });
+    };
+
+    // --- Actions ---
     const openApprovalModal = (user) => {
         setUserToApprove(user);
         setConfirmingUserApproval(true);
@@ -29,10 +47,14 @@ export default function Index({ pendingUsers = [] }) {
     const handleConfirmApprove = () => {
         router.patch(route('admin.verifications.update', userToApprove.id), {
             status: 'approved'
-        }, { onSuccess: () => setConfirmingUserApproval(false) });
+        }, { 
+            onSuccess: () => {
+                setConfirmingUserApproval(false);
+                showToast('User Approved');
+            }
+        });
     };
 
-    // --- Rejection Actions ---
     const openRejectionModal = (user) => {
         setUserToReject(user);
         setConfirmingUserRejection(true);
@@ -47,7 +69,10 @@ export default function Index({ pendingUsers = [] }) {
     const handleConfirmReject = (e) => {
         e.preventDefault();
         patch(route('admin.verifications.update', userToReject.id), {
-            onSuccess: () => closeRejectionModal(),
+            onSuccess: () => {
+                closeRejectionModal();
+                showToast('Request Rejected', 'info');
+            },
             preserveScroll: true,
         });
     };
@@ -110,86 +135,72 @@ export default function Index({ pendingUsers = [] }) {
                 )}
             </div>
 
-            {/* --- APPROVAL MODAL --- */}
-            <Modal show={confirmingUserApproval} onClose={() => setConfirmingUserApproval(false)} maxWidth="md">
-                <div className="text-center p-2">
-                    {/* Centered Icon Container */}
-                    <div className="bg-indigo-50 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
-                        <CheckBadgeIcon className="w-10 h-10 text-indigo-600" />
-                    </div>
+            {/* --- CUSTOM MODAL OVERLAY --- */}
+            {(confirmingUserApproval || confirmingUserRejection) && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm animate-in fade-in duration-200">
+                    
+                    {/* APPROVAL MODAL */}
+                    {confirmingUserApproval && (
+                        <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 md:p-10 relative animate-in zoom-in-95 duration-200">
+                            <button onClick={() => setConfirmingUserApproval(false)} className="absolute top-6 right-6 p-2 text-slate-400 hover:bg-slate-50 rounded-full">
+                                <XMarkIcon className="w-6 h-6" />
+                            </button>
 
-                    <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Approve Access?</h2>
+                            <div className="text-center">
+                                <div className="bg-indigo-50 w-20 h-20 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+                                    <CheckBadgeIcon className="w-10 h-10 text-indigo-600" />
+                                </div>
+                                <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">Approve Access?</h2>
+                                <p className="mt-4 text-slate-500 font-medium text-base px-4 leading-relaxed">
+                                    Verifying <span className="text-slate-900 font-bold">{userToApprove?.full_name}</span> will grant them full access. They will be notified via email.
+                                </p>
+                                <div className="mt-10 grid grid-cols-2 gap-4">
+                                    <button onClick={() => setConfirmingUserApproval(false)} className="px-6 py-5 bg-slate-100 text-slate-600 font-bold rounded-2xl text-sm hover:bg-slate-200 transition-all">Cancel</button>
+                                    <button onClick={handleConfirmApprove} className="px-6 py-5 bg-indigo-600 text-white font-bold rounded-2xl text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">Confirm</button>
+                                </div>
+                                <div className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
+                                    Identity Verification
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
-                    <p className="mt-4 text-slate-500 font-medium text-base px-4 leading-relaxed">
-                        Verifying <span className="text-slate-900 font-bold">{userToApprove?.full_name}</span> will grant them full access. They will be notified via email.
-                    </p>
+                    {/* REJECTION MODAL */}
+                    {confirmingUserRejection && (
+                        <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl p-6 md:p-10 relative animate-in zoom-in-95 duration-200">
+                            <button onClick={closeRejectionModal} className="absolute top-6 right-6 p-2 text-slate-400 hover:bg-slate-50 rounded-full">
+                                <XMarkIcon className="w-6 h-6" />
+                            </button>
 
-                    {/* Action Buttons */}
-                    <div className="mt-10 grid grid-cols-2 gap-4">
-                        <button
-                            type="button"
-                            onClick={() => setConfirmingUserApproval(false)}
-                            className="px-6 py-5 bg-slate-100 text-slate-600 font-bold rounded-[1.5rem] text-sm hover:bg-slate-200 transition-all active:scale-[0.98]"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleConfirmApprove}
-                            className="px-6 py-5 bg-indigo-600 text-white font-bold rounded-[1.5rem] text-sm shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-[0.98]"
-                        >
-                            Confirm
-                        </button>
-                    </div>
-
-                    {/* Footer Label */}
-                    <div className="mt-8 text-[10px] font-black uppercase tracking-[0.2em] text-slate-300">
-                        Identity Verification
-                    </div>
+                            <form onSubmit={handleConfirmReject} className="text-center">
+                                <div className="bg-red-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                                    <ChatBubbleLeftEllipsisIcon className="w-8 h-8 text-red-500" />
+                                </div>
+                                <h2 className="text-xl md:text-2xl font-black text-slate-900">Reject Verification</h2>
+                                <p className="mt-4 text-slate-500 font-medium text-sm px-2 text-center leading-relaxed">
+                                    Please provide a reason for rejecting <span className="font-bold text-slate-900">{userToReject?.full_name}</span>. This will be shown to the user.
+                                </p>
+                                <div className="mt-6 text-left">
+                                    <textarea
+                                        className="w-full rounded-[1.5rem] border-none focus:ring-2 focus:ring-red-500 text-sm font-medium p-4 min-h-[120px] bg-slate-50 shadow-inner"
+                                        placeholder="e.g., ID photo is blurry, expired document, name mismatch..."
+                                        value={data.reason}
+                                        onChange={e => setData('reason', e.target.value)}
+                                        required
+                                    />
+                                    {errors.reason && <p className="mt-2 text-xs text-red-600 font-bold ml-2">{errors.reason}</p>}
+                                </div>
+                                <div className="mt-8 grid grid-cols-2 gap-3">
+                                    <button type="button" onClick={closeRejectionModal} className="px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-sm transition-all">Back</button>
+                                    <button type="submit" disabled={processing} className="px-6 py-4 bg-red-500 text-white font-bold rounded-2xl text-sm shadow-lg shadow-red-100 hover:bg-red-600 transition-all disabled:opacity-50">
+                                        {processing ? 'Rejecting...' : 'Reject User'}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
                 </div>
-            </Modal>
-
-            {/* --- REJECT MODAL --- */}
-            <Modal show={confirmingUserRejection} onClose={closeRejectionModal} maxWidth="md">
-                <form onSubmit={handleConfirmReject} className="text-center">
-                    <div className="bg-red-50 w-16 h-16 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                        <ChatBubbleLeftEllipsisIcon className="w-8 h-8 text-red-500" />
-                    </div>
-
-                    <h2 className="text-xl md:text-2xl font-black text-slate-900">Reject Verification</h2>
-                    <p className="mt-4 text-slate-500 font-medium text-sm px-2 text-center leading-relaxed">
-                        Please provide a reason for rejecting <span className="font-bold text-slate-900">{userToReject?.full_name}</span>. This will be shown to the user.
-                    </p>
-
-                    <div className="mt-6 text-left">
-                        <textarea
-                            className="w-full rounded-[1.5rem] border-slate-200 focus:border-red-500 focus:ring-red-500 text-sm font-medium p-4 min-h-[120px] bg-slate-50 shadow-inner"
-                            placeholder="e.g., ID photo is blurry, expired document, name mismatch..."
-                            value={data.reason}
-                            onChange={e => setData('reason', e.target.value)}
-                            required
-                        />
-                        {errors.reason && <p className="mt-2 text-xs text-red-600 font-bold ml-2">{errors.reason}</p>}
-                    </div>
-
-                    <div className="mt-8 grid grid-cols-2 gap-3">
-                        <button
-                            type="button"
-                            onClick={closeRejectionModal}
-                            className="px-6 py-4 bg-slate-100 text-slate-600 font-bold rounded-2xl text-sm transition-all"
-                        >
-                            Back
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={processing}
-                            className="px-6 py-4 bg-red-500 text-white font-bold rounded-2xl text-sm shadow-lg shadow-red-100 hover:bg-red-600 transition-all disabled:opacity-50"
-                        >
-                            {processing ? 'Rejecting...' : 'Reject User'}
-                        </button>
-                    </div>
-                </form>
-            </Modal>
+            )}
 
             {/* --- IMAGE LIGHTBOX --- */}
             {selectedImage && (
